@@ -200,7 +200,7 @@ a{color:var(--accent);}
    progresión por 1RM estimado, no volumen total.
    ============================================================ */
 
-const APP_VERSION = "1.1";
+const APP_VERSION = "1.2";
 const LS_KEY = "modoAtleta_v1";
 
 /* ---------- Rutinas precargadas (Plan Fase 1, equipo de casa) ----------
@@ -260,6 +260,24 @@ const ROUTINES = [
     {id:"woodchop", name:"Wood Chop con banda", mode:"band", sets:3, reps:[10,12], perSide:true},
     {id:"calf2", name:"Elevación de talones ⭐", mode:"w", sets:3, reps:[20,25], startW:50,
      tip:"Va 2×/semana. Prioridad sarcopenia."}
+  ]
+},
+{
+  id:"G", name:"Golf — Rotación y Potencia", color:"orange",
+  note:"Rotar desde la CADERA, columna estable (disociación). Sin slams. Exhala en cada lanzamiento. 2×/semana, ideal tras Zona 2 (~25 min).",
+  exercises:[
+    {id:"hipswitch", name:"90/90 Hip Switch", mode:"bw", sets:2, reps:[10,12], perSide:true,
+     tip:"Disociación de cadera — la base del backswing. Suave, sin rebote."},
+    {id:"palrot", name:"Pallof Press Rotacional", mode:"band", sets:3, reps:[10,12], perSide:true,
+     tip:"Banda anclada. Rotación controlada desde la cadera con brazos extendidos, columna neutra."},
+    {id:"choplift", name:"Chop & Lift con banda", mode:"band", sets:3, reps:[10,12], perSide:true,
+     tip:"Leñador diagonal: alto→bajo y bajo→alto. El patrón del swing con carga."},
+    {id:"mbrot", name:"Lanzamiento rotacional — pelota 20 lb", mode:"w", sets:3, reps:[6,8], perSide:true, startW:20,
+     tip:"Contra pared. Potencia desde la cadera, columna neutra, exhalando. Aquí vive la velocidad del drive."},
+    {id:"mbchest", name:"Chest Pass — pelota 20 lb", mode:"w", sets:3, reps:[6,8], startW:20,
+     tip:"Explosivo, exhalando. Potencia de empuje sin carga axial."},
+    {id:"bosugolf", name:"BOSU — equilibrio 1 pierna", mode:"hold", sets:2, secs:30, perSide:true,
+     tip:"Estabilidad del finish. Progresión: ojos cerrados."}
   ]
 },
 {
@@ -442,7 +460,7 @@ function weekSessions(){
   let fuerza=0, cardio=0;
   for(const s of S.sessions){
     if(s.date>=monISO){
-      if(s.type==="fuerza" && s.routineId!=="M") fuerza++;
+      if(s.type==="fuerza" && s.routineId!=="M" && s.routineId!=="G") fuerza++;
       if(s.type==="cardio" && (s.cardio.kind==="zona2"||s.cardio.kind==="futbol"||s.cardio.kind==="rampa")) cardio++;
     }
   }
@@ -508,9 +526,9 @@ function viewEntrenar(){
   if(S.active) return viewActiveSession();
   let h='<h2>Entrenar</h2><h3>Fuerza</h3>';
   for(const r of ROUTINES){
-    const isM = r.id==="M";
+    const tag = r.id==="M"? "diario" : (r.id==="G"? "golf" : "fuerza");
     h+='<div class="card tap" onclick="startStrength(\''+r.id+'\')">'
-      +'<div class="row between"><b>'+esc(r.name)+'</b><span class="pill '+(isM?"orange":"blue")+'">'+(isM?"diario":"fuerza")+'</span></div>'
+      +'<div class="row between"><b>'+esc(r.name)+'</b><span class="pill '+(tag==="fuerza"?"blue":"orange")+'">'+tag+'</span></div>'
       +'<div class="sub">'+r.exercises.map(e=>e.name.replace(" ⭐","")).join(" · ")+'</div></div>';
   }
   h+='<h3>Cardio</h3>';
