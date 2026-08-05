@@ -120,11 +120,18 @@ nav.tabs button.active{color:var(--accent); font-weight:600;}
 .done{color:var(--good-text); font-weight:600;}
 .timerbar{
   position:fixed; left:0; right:0; bottom:calc(64px + env(safe-area-inset-bottom)); z-index:40;
-  background:var(--accent); color:#fff; display:none;
-  align-items:center; justify-content:space-between; padding:12px 20px;
-  font-variant-numeric:tabular-nums; font-size:18px; font-weight:600;
+  background:var(--warn); color:#0b0b0b; display:none;
+  align-items:center; justify-content:space-between; padding:14px 20px;
+  font-variant-numeric:tabular-nums; font-size:22px; font-weight:700;
 }
-.timerbar button{background:rgba(255,255,255,.2); color:#fff; border:none;}
+.timerbar.final{background:var(--crit); color:#fff;}
+.timerbar button{background:rgba(0,0,0,.15); color:inherit; border:none; font-weight:600;}
+.delta{font-size:13px; font-weight:700; margin-left:6px;}
+.delta.up{color:var(--good-text);}
+.delta.dn{color:var(--crit);}
+.setrow .ghostv{color:var(--muted);}
+.setrow.pending input{border-color:var(--axis);}
+.confirmbtn{min-width:52px;}
 .kpi{display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px; margin:12px 0;}
 .kpi .tile{background:var(--surface-1); border:1px solid var(--border); border-radius:14px; padding:12px 14px;}
 .kpi .tile .v{font-size:26px; font-weight:700; letter-spacing:-0.02em;}
@@ -193,7 +200,7 @@ a{color:var(--accent);}
    progresión por 1RM estimado, no volumen total.
    ============================================================ */
 
-const APP_VERSION = "1.0";
+const APP_VERSION = "1.1";
 const LS_KEY = "modoAtleta_v1";
 
 /* ---------- Rutinas precargadas (Plan Fase 1, equipo de casa) ----------
@@ -386,6 +393,7 @@ const Timer = {
     const left=Math.max(0,Math.round((this.end-Date.now())/1000));
     const m=Math.floor(left/60), s=left%60;
     document.getElementById("timerCount").textContent=m+":"+String(s).padStart(2,"0");
+    document.getElementById("timerbar").classList.toggle("final", left<=10);
     if(left<=0){
       this.stop();
       try{ navigator.vibrate && navigator.vibrate([200,100,200]); }catch(e){}
@@ -539,14 +547,22 @@ function viewActiveSession(){
     if(last) h+='<div class="prev">La vez pasada ('+fmtDate(last.date)+'): '
       + last.sets.map(s=>setLabel(exDef.mode,s)).join(" · ")+'</div>';
     if(hint) h+='<div class="hint up">📈 '+esc(hint)+'</div>';
-    /* series ya registradas */
+    /* series confirmadas (con delta vs sesión anterior) */
     for(let si=0; si<ex.sets.length; si++){
       h+='<div class="setrow"><span class="n">'+(si+1)+'</span>'
-        +'<span style="flex:1">'+setLabel(exDef.mode,ex.sets[si])+'</span>'
+        +'<span style="flex:1">'+setLabel(exDef.mode,ex.sets[si])+deltaBadge(exDef,ex.sets[si],last,si)+'</span>'
+        +'<span class="done" style="margin-right:4px">✓</span>'
         +'<button class="small ghost" onclick="delSet('+i+','+si+')">✕</button></div>';
     }
-    /* fila de entrada */
-    h+=inputRow(exDef,i,ex);
+    /* filas pendientes precargadas — un tap para confirmar */
+    for(let si=ex.sets.length; si<exDef.sets; si++){
+      h+=inputRowPre(exDef,i,si,ex,last);
+    }
+    if(ex.sets.length>=exDef.sets)
+      h+='<div style="margin-top:6px"><button class="small ghost" onclick="addExtraRow('+i+')">＋ serie extra</button></div>';
+    if(a.extraRows && a.extraRows[i]>0){
+      for(let k=0;k<a.extraRows[i];k++) h+=inputRowPre(exDef,i,exDef.sets+k,ex,last);
+    }
     h+='</div>';
   });
   h+='<label class="f">Notas de la sesión (craving, FC, molestias, energía…)</label>'
@@ -562,45 +578,71 @@ function targetLabel(e){
   if(e.mode==="carry") return e.sets+" × "+r+" pasos c/lado";
   return e.sets+" × "+r+(e.perSide?" c/lado":"")+(e.startW?(" · "+e.startW+" lb"):"");
 }
-function inputRow(exDef,i,ex){
-  const prevSet = ex.sets.length? ex.sets[ex.sets.length-1] : null;
-  const last = lastPerf(exDef.id, S.active.id);
-  const suggW = prevSet? prevSet.w : (last&&last.sets[0].w!=null? last.sets[0].w : exDef.startW||"");
-  const suggR = prevSet? prevSet.r : (exDef.reps? exDef.reps[1] : "");
-  const suggS = prevSet? prevSet.s : exDef.secs||30;
-  const suggB = prevSet? (prevSet.band||"") : (last&&last.sets[0].band? last.sets[0].band : "");
+/* Comparativo vs la misma serie de la sesión anterior */
+function deltaBadge(exDef,st,last,si){
+  if(!last) return "";
+  const prev = last.sets[si] || last.sets[last.sets.length-1];
+  if(!prev) return "";
+  let d=null, unit="";
+  if((exDef.mode==="w"||exDef.mode==="carry") && st.w!=null && prev.w!=null){ d=st.w-prev.w; unit=" lb"; }
+  else if(exDef.mode==="bw" && st.r!=null && prev.r!=null){ d=st.r-prev.r; unit=""; }
+  else if(exDef.mode==="hold" && st.s!=null && prev.s!=null){ d=st.s-prev.s; unit=" s"; }
+  if(d==null || d===0) return "";
+  return d>0? '<span class="delta up">▲+'+d+unit+'</span>' : '<span class="delta dn">▼'+d+unit+'</span>';
+}
+/* Fila precargada: los valores ya están puestos — solo confirmas con ✓ */
+function inputRowPre(exDef,i,si,ex,last){
+  const prevSet = ex.sets.length? ex.sets[ex.sets.length-1] : null; /* lo confirmado hoy manda */
+  const lastAt = last? (last.sets[si] || last.sets[last.sets.length-1]) : null;
+  const suggW = (prevSet&&prevSet.w!=null)? prevSet.w : (lastAt&&lastAt.w!=null? lastAt.w : exDef.startW||"");
+  const suggR = (lastAt&&lastAt.r!=null)? lastAt.r : (prevSet&&prevSet.r!=null? prevSet.r : (exDef.reps? exDef.reps[1] : ""));
+  const suggS = (lastAt&&lastAt.s!=null)? lastAt.s : (prevSet&&prevSet.s!=null? prevSet.s : exDef.secs||30);
+  const suggB = (prevSet&&prevSet.band)? prevSet.band : (lastAt&&lastAt.band? lastAt.band : "");
+  const k=i+"_"+si;
   let fields="";
   if(exDef.mode==="w" || exDef.mode==="carry"){
-    fields='<input type="number" inputmode="decimal" id="w'+i+'" placeholder="lb" value="'+suggW+'">'
+    fields='<input type="number" inputmode="decimal" id="w'+k+'" placeholder="lb" value="'+suggW+'">'
       +'<span class="x">×</span>'
-      +'<input type="number" inputmode="numeric" id="r'+i+'" placeholder="'+(exDef.mode==="carry"?"pasos":"reps")+'" value="'+suggR+'">';
+      +'<input type="number" inputmode="numeric" id="r'+k+'" placeholder="'+(exDef.mode==="carry"?"pasos":"reps")+'" value="'+suggR+'">';
   }else if(exDef.mode==="bw"){
-    fields='<input type="number" inputmode="numeric" id="r'+i+'" placeholder="reps" value="'+suggR+'">'
+    fields='<input type="number" inputmode="numeric" id="r'+k+'" placeholder="reps" value="'+suggR+'">'
       +'<span class="x">+</span>'
-      +'<input type="number" inputmode="decimal" id="w'+i+'" placeholder="lastre" value="">';
+      +'<input type="number" inputmode="decimal" id="w'+k+'" placeholder="lastre" value="'+(suggW&&exDef.mode==="bw"&&lastAt&&lastAt.w?lastAt.w:"")+'">';
   }else if(exDef.mode==="band"){
-    fields='<input type="text" id="b'+i+'" placeholder="banda (color/tensión)" style="width:150px" value="'+esc(suggB)+'">'
+    fields='<input type="text" id="b'+k+'" placeholder="banda (color/tensión)" style="width:150px" value="'+esc(suggB)+'">'
       +'<span class="x">×</span>'
-      +'<input type="number" inputmode="numeric" id="r'+i+'" placeholder="reps" value="'+suggR+'">';
+      +'<input type="number" inputmode="numeric" id="r'+k+'" placeholder="reps" value="'+suggR+'">';
   }else if(exDef.mode==="hold"){
-    fields='<input type="number" inputmode="numeric" id="s'+i+'" placeholder="seg" value="'+suggS+'">'
+    fields='<input type="number" inputmode="numeric" id="s'+k+'" placeholder="seg" value="'+suggS+'">'
       +'<span class="x">s</span>'
-      +'<input type="text" id="b'+i+'" placeholder="banda (opc.)" style="width:130px" value="'+esc(suggB)+'">';
+      +'<input type="text" id="b'+k+'" placeholder="banda (opc.)" style="width:130px" value="'+esc(suggB)+'">';
   }
-  return '<div class="setrow"><span class="n">'+(ex.sets.length+1)+'</span>'+fields
-    +'<button class="primary small" onclick="logSet('+i+')">＋ Serie</button></div>';
+  return '<div class="setrow pending"><span class="n">'+(si+1)+'</span>'+fields
+    +'<button class="primary small confirmbtn" onclick="logSetRow('+i+','+si+')">✓</button></div>';
 }
 function num(id){ const el=document.getElementById(id); if(!el) return null; const v=parseFloat(el.value); return isNaN(v)?null:v; }
 function txt(id){ const el=document.getElementById(id); return el? el.value.trim():""; }
-function logSet(i){
+function logSetRow(i,si){
   const a=S.active; const exDef=ROUTINES.find(r=>r.id===a.routineId).exercises[i];
+  const k=i+"_"+si;
   const st={};
-  if(exDef.mode==="hold"){ st.s=num("s"+i); const b=txt("b"+i); if(b) st.band=b; if(!st.s) return; }
-  else if(exDef.mode==="band"){ st.band=txt("b"+i)||"banda"; st.r=num("r"+i); if(!st.r) return; }
-  else { st.w=num("w"+i); st.r=num("r"+i); if(!st.r) return; if(exDef.mode==="w"&&st.w==null) return; }
+  if(exDef.mode==="hold"){ st.s=num("s"+k); const b=txt("b"+k); if(b) st.band=b; if(!st.s) return; }
+  else if(exDef.mode==="band"){ st.band=txt("b"+k)||"banda"; st.r=num("r"+k); if(!st.r) return; }
+  else {
+    st.w=num("w"+k); st.r=num("r"+k);
+    if(!st.r) return;
+    if(exDef.mode==="w"&&st.w==null) return;
+    if(exDef.mode==="bw"&&st.w==null) delete st.w;
+  }
   a.exercises[i].sets.push(st);
+  if(a.exercises[i].sets.length>exDef.sets && a.extraRows && a.extraRows[i]>0) a.extraRows[i]--;
   saveState();
   Timer.start();
+  render();
+}
+function addExtraRow(i){
+  S.active.extraRows=S.active.extraRows||{};
+  S.active.extraRows[i]=(S.active.extraRows[i]||0)+1;
   render();
 }
 function delSet(i,si){ S.active.exercises[i].sets.splice(si,1); saveState(); render(); }
@@ -628,10 +670,18 @@ function openCardio(kind){
   let h='<h2>'+esc(c.name)+'</h2>';
   if(c.target) h+='<div class="banner">🎯 '+esc(c.target)+'</div>';
   if(kind==="zona2") h+='<div class="safety">Puedes hablar con esfuerzo = en zona. Si puedes cantar, sube inclinación; si no puedes hablar, baja. NO es Zona 2 si la FC no está en 115–125.</div>';
+  /* precarga con la última sesión del mismo tipo — solo corrige lo que cambió */
+  let lastC=null;
+  for(let i=S.sessions.length-1;i>=0;i--){
+    const s=S.sessions[i];
+    if(s.type==="cardio"&&s.cardio.kind===kind){ lastC=s.cardio; break; }
+  }
+  if(lastC) h+='<div class="prev">⚡ Precargado con tu última sesión — solo corrige lo que cambió y guarda.</div>';
   h+='<div class="card"><div class="grid2">';
   for(const f of c.fields){
+    const pv=(lastC&&lastC[f]!=null)? lastC[f] : "";
     h+='<div><label class="f">'+CARDIO_FIELD_LABELS[f]+'</label>'
-      +'<input type="number" inputmode="decimal" id="cf_'+f+'"></div>';
+      +'<input type="number" inputmode="decimal" id="cf_'+f+'" value="'+pv+'"></div>';
   }
   h+='</div><label class="f">Fecha</label><input type="date" id="cf_date" value="'+todayISO()+'">'
     +'<label class="f">Notas</label><textarea id="cf_note" placeholder="'+(kind==="golf"?"¿Ultra Zero 0.0? ¿Cuántas cervezas reales?":"")+'"></textarea></div>';
