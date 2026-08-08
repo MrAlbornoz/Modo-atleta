@@ -200,7 +200,7 @@ a{color:var(--accent);}
    progresión por 1RM estimado, no volumen total.
    ============================================================ */
 
-const APP_VERSION = "1.2";
+const APP_VERSION = "1.3";
 const LS_KEY = "modoAtleta_v1";
 
 /* ---------- Rutinas precargadas (Plan Fase 1, equipo de casa) ----------
@@ -217,16 +217,17 @@ const ROUTINES = [
   note:"Exhala en el esfuerzo. Sin carga axial. 2–3 reps en reserva.",
   exercises:[
     {id:"floorpress", name:"Floor Press — EZ Bar", mode:"w", sets:3, reps:[8,10], startW:155,
-     tip:"29-jul: 3×10 × 155 lb (topado por discos). Progresa con tempo/pausas hasta ~180."},
+     tip:"🔒 TOPADO POR DISCOS (155 lb). La progresión aquí es TEMPO: baja en 3 s + pausa de 2 s en el piso. No busques más peso."},
     {id:"dip", name:"Chest Dip (paralelas)", mode:"bw", sets:3, reps:[6,10],
      tip:"A 226 lb de corporal es tu mejor carga de empuje. Cero carga axial."},
     {id:"incpress", name:"DB Incline Press", mode:"w", sets:3, reps:[8,12], startW:40,
      tip:"Con las nuevas de 50/60: salto 40→50 es +25%. Sube reps antes que peso."},
-    {id:"latraise", name:"DB Lateral Raise", mode:"w", sets:3, reps:[10,15], startW:15},
+    {id:"latraise", name:"DB Lateral Raise", mode:"w", sets:3, reps:[10,15], startW:20,
+     tip:"5-ago: 15 lb × 15/15/15 sin fatiga → subido a 20 lb."},
     {id:"triband", name:"Tríceps con banda", mode:"band", sets:3, reps:[12,15],
      tip:"Registra color/tensión de la banda + distancia al anclaje."},
-    {id:"calf", name:"Elevación de talones ⭐", mode:"w", sets:3, reps:[20,25], startW:50,
-     tip:"PRIORIDAD sarcopenia (pantorrilla 14\"). Nunca saltarla."}
+    {id:"calf", name:"Elevación de talones ⭐", mode:"w", sets:3, reps:[20,25], startW:60,
+     tip:"5-ago: 50 lb × 25/25/25 muy fácil → 60 lb. ⚠️ TOPE FIJO EN 60: 60×2 = 120 lb colgando = carga axial en formato maleta. No escalar más."}
   ]
 },
 {
@@ -252,14 +253,14 @@ const ROUTINES = [
     {id:"bss", name:"Bulgarian Split Squat", mode:"bw", sets:3, reps:[8,10], perSide:true,
      tip:"29-jul: corporal (226 lb) ya es carga real. Aquí sube más la FC — autorregula."},
     {id:"stepup", name:"Step-up al banco", mode:"w", sets:3, reps:[8,10], startW:20, perSide:true},
-    {id:"dbbench", name:"DB Bench Press", mode:"w", sets:3, reps:[8,10], startW:40,
-     tip:"16-jul: 40×12 'como si nada'. Toca probar las de 50."},
+    {id:"dbbench", name:"DB Bench Press", mode:"w", sets:3, reps:[8,10], startW:50,
+     tip:"16-jul: 40×12 'como si nada'. Hoy estrena las de 50 — baja a 8 reps y construye."},
     {id:"rowuni", name:"Remo unilateral con apoyo", mode:"w", sets:3, reps:[8,10], startW:50, perSide:true},
     {id:"carry", name:"Suitcase Carry", mode:"carry", sets:3, reps:[40,40], startW:50,
      tip:"Anota peso + pasos por lado. Core anti-flexión lateral sin comprimir."},
     {id:"woodchop", name:"Wood Chop con banda", mode:"band", sets:3, reps:[10,12], perSide:true},
-    {id:"calf2", name:"Elevación de talones ⭐", mode:"w", sets:3, reps:[20,25], startW:50,
-     tip:"Va 2×/semana. Prioridad sarcopenia."}
+    {id:"calf2", name:"Elevación de talones ⭐", mode:"w", sets:3, reps:[20,25], startW:60,
+     tip:"Va 2×/semana. Prioridad sarcopenia. ⚠️ Tope fijo en 60 lb por mancuerna."}
   ]
 },
 {
@@ -282,11 +283,14 @@ const ROUTINES = [
 },
 {
   id:"M", name:"McGill Big 3 (diario)", color:"orange",
-  note:"Antes de cualquier sesión. Espalda neutra siempre.",
+  note:"PIRÁMIDE DESCENDENTE 6-4-2. Cada repetición es un HOLD de 8–10 s, no un movimiento rápido. Espalda NEUTRA siempre — cero flexión lumbar repetida (L2–S1 + estenosis foraminal). Descanso ~20 s entre escalones.",
   exercises:[
-    {id:"curlup", name:"Curl-up modificado", mode:"bw", sets:3, reps:[8,10]},
-    {id:"sideplank", name:"Side Plank — HOLD", mode:"hold", sets:3, secs:20, perSide:true},
-    {id:"birddog", name:"Bird-dog", mode:"bw", sets:3, reps:[8,10], perSide:true}
+    {id:"curlup", name:"Curl-up modificado", mode:"bw", sets:3, pyramid:[6,4,2], holdSec:10, noLoad:true,
+     tip:"Manos bajo la lumbar, una rodilla flexionada. Levanta SOLO cabeza y hombros unos centímetros y AGUANTA 8–10 s. La lumbar no se despega ni se aplana."},
+    {id:"sideplank", name:"Side Plank", mode:"bw", sets:3, pyramid:[6,4,2], holdSec:10, perSide:true, noLoad:true,
+     tip:"Cada rep = subir la cadera y aguantar 8–10 s, luego bajar. Rodillas flexionadas si hace falta. Los dos lados."},
+    {id:"birddog", name:"Bird-dog", mode:"bw", sets:3, pyramid:[6,4,2], holdSec:10, perSide:true, noLoad:true,
+     tip:"Brazo y pierna contraria extendidos, aguanta 8–10 s. Cadera cuadrada, sin arquear la lumbar. Barre el piso con la mano al volver."}
   ]
 }
 ];
@@ -310,11 +314,27 @@ const CARDIO_FIELD_LABELS = {min:"Duración (min)", hrAvg:"FC promedio", hrMax:"
 
 /* Checklist diario (del plan) */
 const CHECKLIST = [
-  {id:"mcgill", t:"McGill Big 3", d:"10 min — todos los días, sin excepción"},
-  {id:"sesion", t:"Sesión programada", d:"Fuerza / Zona 2 / caminata"},
-  {id:"prot", t:"Proteína 180–200 g", d:"2 merengadas NO negociables + 2 sólidas"},
+  {id:"mcgill", t:"McGill Big 3", d:"Pirámide 6-4-2 con hold — todos los días"},
+  {id:"sesion", t:"Sesión programada", d:"La del cronograma de arriba"},
+  {id:"prot1", t:"Merengada 1 — 1:00 PM", d:"~50 g · va aunque no haya hambre (tirzepatide)"},
+  {id:"prot2", t:"Merengada 2 — 5:30 PM", d:"~50 g · va aunque no haya hambre (tirzepatide)"},
   {id:"crea", t:"Creatina 5 g", d:"Todos los días, también en descanso"},
   {id:"pasos", t:"8,000+ pasos", d:"Meta: subir a 9,500"}
+];
+
+/* ---------- Cronograma semanal fijo (v1.3) ----------
+   Federico no decide qué entrenar: la app se lo dice.
+   0 = lunes … 6 = domingo */
+const WEEK_PLAN = [
+  {d:"Lunes",     items:[{k:"r", id:"A", label:"Fuerza A — Empuje"}, {k:"r", id:"M", label:"McGill Big 3"}]},
+  {d:"Martes",    items:[{k:"c", id:"zona2", label:"Zona 2 — 40 min · FC 115–125"}, {k:"r", id:"G", label:"Golf — Rotación"}, {k:"r", id:"M", label:"McGill Big 3"}]},
+  {d:"Miércoles", items:[{k:"r", id:"B", label:"Fuerza B — Tirón + Core"}, {k:"r", id:"M", label:"McGill Big 3"}]},
+  {d:"Jueves",    items:[{k:"r", id:"M", label:"McGill Big 3 + movilidad (AM)"}, {k:"c", id:"futbol", label:"⚽ Fútbol (PM)"}],
+   nota:"Ventana de riesgo documentada: post-partido. Plan de cerveza 0.0% decidido ANTES de salir."},
+  {d:"Viernes",   items:[{k:"c", id:"zona2", label:"Zona 2 de recuperación"}, {k:"r", id:"M", label:"McGill Big 3"}],
+   nota:"Respaldo JSON al proyecto + pegar el 📋 resumen en el chat de salud."},
+  {d:"Sábado",    items:[{k:"r", id:"C", label:"Fuerza C — Unilateral"}, {k:"r", id:"G", label:"Golf — Rotación"}, {k:"r", id:"M", label:"McGill Big 3"}]},
+  {d:"Domingo",   items:[], nota:"🛑 DESCANSO TOTAL. Creatina y proteína siguen. No entrenar."}
 ];
 </script>
 <script>
@@ -336,6 +356,22 @@ function saveState(){
 let S = loadState();
 S.sessions = S.sessions || []; S.checklist = S.checklist || {};
 S.settings = S.settings || {restSec:90};
+S.lowReadiness = S.lowReadiness || {};
+
+/* Migración v1.2 → v1.3: el check único de proteína se parte en dos.
+   Si estaba marcado, se asume que las dos merengadas se tomaron. */
+(function migrateProt(){
+  let touched=false;
+  for(const d in S.checklist){
+    const c=S.checklist[d];
+    if(c && Object.prototype.hasOwnProperty.call(c,"prot")){
+      if(c.prot1===undefined) c.prot1 = !!c.prot;
+      if(c.prot2===undefined) c.prot2 = !!c.prot;
+      delete c.prot; touched=true;
+    }
+  }
+  if(touched) saveState();
+})();
 
 function todayISO(){ const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
 function fmtDate(iso){
@@ -361,7 +397,10 @@ function setLabel(mode,st){
   if(mode==="hold") return (st.s||0)+" s" + (st.band? " · "+st.band : "");
   if(mode==="band") return (st.band||"banda")+" × "+(st.r||0);
   if(mode==="carry") return (st.w||0)+" lb × "+(st.r||0)+" pasos";
-  if(mode==="bw") return (st.w? "+"+st.w+" lb × " : "") + (st.r||0) + (st.w?"":" reps");
+  if(mode==="bw"){
+    if(st.r==null && st.s!=null) return st.s+" s";
+    return (st.w? "+"+st.w+" lb × " : "") + (st.r||0) + (st.w?"":" reps");
+  }
   return (st.w||0)+" lb × "+(st.r||0);
 }
 function nextDBStep(w){
@@ -371,7 +410,7 @@ function nextDBStep(w){
 
 /* Sugerencia de progresión: todas las series al tope del rango → subir */
 function progressionHint(exDef, last){
-  if(!last) return null;
+  if(!last || exDef.pyramid) return null;
   const topReps = exDef.reps ? exDef.reps[1] : null;
   if(exDef.mode==="w"){
     const sets=last.sets.filter(s=>s.r);
@@ -486,6 +525,33 @@ function viewHoy(){
         +'<div class="sub">'+sessionSummary(s)+'</div></div><span class="done">✓</span></div></div>';
     }
   }
+  /* ---- Programa fijo del día (v1.3) ---- */
+  const di=(new Date().getDay()+6)%7;
+  const plan=WEEK_PLAN[di];
+  const low=!!S.lowReadiness[t];
+  h+='<h3>Programa de hoy — '+plan.d+'</h3><div class="card">';
+  if(!plan.items.length){
+    h+='<div style="font-size:17px;padding:6px 0"><b>🛑 Descanso total.</b></div>';
+  }else{
+    for(const it of plan.items){
+      const hecho = it.k==="r"
+        ? todays.some(s=>s.type==="fuerza" && s.routineId===it.id)
+        : todays.some(s=>s.type==="cardio" && s.cardio && s.cardio.kind===it.id);
+      const fn = it.k==="r" ? "startStrength" : "goCardio";
+      h+='<div class="setrow"><span style="flex:1">'+(hecho?"✓ ":"")+esc(it.label)+'</span>'
+        +(hecho? '<span class="done">listo</span>'
+               : '<button class="primary small" onclick="'+fn+'(\''+it.id+'\')">Empezar</button>')
+        +'</div>';
+    }
+  }
+  if(plan.nota) h+='<div class="safety" style="margin-top:8px">'+esc(plan.nota)+'</div>';
+  if(plan.items.some(x=>x.k==="r" && x.id!=="M")){
+    h+='<div style="margin-top:10px"><button class="'+(low?"danger":"ghost")+' small" onclick="toggleLowReadiness()">'
+      +(low? "🟠 Readiness baja ACTIVA — 1 serie menos por ejercicio (toca para quitar)"
+           : "🟠 Readiness baja")+'</button>'
+      +'<div class="d" style="font-size:13px;color:var(--muted);margin-top:6px">Recorta una serie por ejercicio en la fuerza. <b>Nunca toca el McGill.</b> Actívalo antes de empezar la sesión.</div></div>';
+  }
+  h+='</div>';
   h+='<h3>Checklist diario</h3><div class="card">';
   for(const c of CHECKLIST){
     const on=!!chk[c.id];
@@ -498,6 +564,13 @@ function viewHoy(){
     +'<div class="safety">❌ Sin carga axial (L2–S1) · ❌ Sin impacto/correr · ✅ Exhalar en el esfuerzo · ✅ La FC manda sobre el número en la app · 🛑 Dolor torácico, disnea desproporcionada o mareo → parar y consultar.</div></div>';
   return h;
 }
+function toggleLowReadiness(){
+  const t=todayISO();
+  S.lowReadiness=S.lowReadiness||{};
+  if(S.lowReadiness[t]) delete S.lowReadiness[t]; else S.lowReadiness[t]=true;
+  saveState(); render();
+}
+function goCardio(kind){ TAB="entrenar"; setActiveTab(); openCardio(kind); }
 function toggleCheck(id){
   const t=todayISO();
   S.checklist[t]=S.checklist[t]||{};
@@ -541,10 +614,17 @@ function viewEntrenar(){
 }
 function startStrength(rid){
   const r=ROUTINES.find(x=>x.id===rid);
+  const low = !!(S.lowReadiness&&S.lowReadiness[todayISO()]) && rid!=="M";
   S.active={ id:uid(), date:todayISO(), type:"fuerza", routineId:rid, name:r.name,
-    startTs:Date.now(), note:"",
+    startTs:Date.now(), note:"", low:low,
     exercises:r.exercises.map(e=>({exId:e.id, name:e.name, mode:e.mode, sets:[]})) };
   saveState(); TAB="entrenar"; render();
+}
+/* Series objetivo de hoy: Readiness baja recorta 1 serie (mínimo 2). Nunca en McGill. */
+function tgtSets(exDef){
+  const a=S.active;
+  if(a && a.low && a.routineId!=="M") return Math.max(2, exDef.sets-1);
+  return exDef.sets;
 }
 function viewActiveSession(){
   const a=S.active;
@@ -553,11 +633,13 @@ function viewActiveSession(){
   let h='<div class="sessionhead"><h2 style="margin:0">'+esc(a.name)+'</h2>'
     +'<span class="pill">'+mins+' min</span></div>';
   if(r && r.note) h+='<div class="banner">'+esc(r.note)+'</div>';
+  if(a.low) h+='<div class="banner">🟠 Readiness baja: 1 serie menos por ejercicio. El McGill nunca se recorta.</div>';
   r.exercises.forEach((exDef,i)=>{
     const ex=a.exercises[i];
     const last=lastPerf(exDef.id, a.id);
     const hint=progressionHint(exDef,last);
-    const done=ex.sets.length>=exDef.sets;
+    const NS=tgtSets(exDef);
+    const done=ex.sets.length>=NS;
     h+='<div class="card '+(done?"exdone":"")+'">';
     h+='<div class="row between"><b>'+esc(exDef.name)+'</b>'
       +'<span class="pill">'+targetLabel(exDef)+'</span></div>';
@@ -573,13 +655,13 @@ function viewActiveSession(){
         +'<button class="small ghost" onclick="delSet('+i+','+si+')">✕</button></div>';
     }
     /* filas pendientes precargadas — un tap para confirmar */
-    for(let si=ex.sets.length; si<exDef.sets; si++){
+    for(let si=ex.sets.length; si<NS; si++){
       h+=inputRowPre(exDef,i,si,ex,last);
     }
-    if(ex.sets.length>=exDef.sets)
+    if(ex.sets.length>=NS)
       h+='<div style="margin-top:6px"><button class="small ghost" onclick="addExtraRow('+i+')">＋ serie extra</button></div>';
     if(a.extraRows && a.extraRows[i]>0){
-      for(let k=0;k<a.extraRows[i];k++) h+=inputRowPre(exDef,i,exDef.sets+k,ex,last);
+      for(let k=0;k<a.extraRows[i];k++) h+=inputRowPre(exDef,i,NS+k,ex,last);
     }
     h+='</div>';
   });
@@ -591,6 +673,7 @@ function viewActiveSession(){
   return h;
 }
 function targetLabel(e){
+  if(e.pyramid) return e.pyramid.join("-")+" reps · hold "+(e.holdSec-2)+"–"+e.holdSec+" s"+(e.perSide?" c/lado":"");
   if(e.mode==="hold") return e.sets+" × "+e.secs+" s"+(e.perSide?" c/lado":"");
   const r=e.reps? (e.reps[0]===e.reps[1]? e.reps[0] : e.reps[0]+"–"+e.reps[1]) : "";
   if(e.mode==="carry") return e.sets+" × "+r+" pasos c/lado";
@@ -613,7 +696,9 @@ function inputRowPre(exDef,i,si,ex,last){
   const prevSet = ex.sets.length? ex.sets[ex.sets.length-1] : null; /* lo confirmado hoy manda */
   const lastAt = last? (last.sets[si] || last.sets[last.sets.length-1]) : null;
   const suggW = (prevSet&&prevSet.w!=null)? prevSet.w : (lastAt&&lastAt.w!=null? lastAt.w : exDef.startW||"");
-  const suggR = (lastAt&&lastAt.r!=null)? lastAt.r : (prevSet&&prevSet.r!=null? prevSet.r : (exDef.reps? exDef.reps[1] : ""));
+  let suggR = (lastAt&&lastAt.r!=null)? lastAt.r : (prevSet&&prevSet.r!=null? prevSet.r : (exDef.reps? exDef.reps[1] : ""));
+  /* La pirámide manda: cada escalón tiene su número de reps fijo */
+  if(exDef.pyramid) suggR = exDef.pyramid[si]!=null? exDef.pyramid[si] : exDef.pyramid[exDef.pyramid.length-1];
   const suggS = (lastAt&&lastAt.s!=null)? lastAt.s : (prevSet&&prevSet.s!=null? prevSet.s : exDef.secs||30);
   const suggB = (prevSet&&prevSet.band)? prevSet.band : (lastAt&&lastAt.band? lastAt.band : "");
   const k=i+"_"+si;
@@ -623,9 +708,10 @@ function inputRowPre(exDef,i,si,ex,last){
       +'<span class="x">×</span>'
       +'<input type="number" inputmode="numeric" id="r'+k+'" placeholder="'+(exDef.mode==="carry"?"pasos":"reps")+'" value="'+suggR+'">';
   }else if(exDef.mode==="bw"){
-    fields='<input type="number" inputmode="numeric" id="r'+k+'" placeholder="reps" value="'+suggR+'">'
-      +'<span class="x">+</span>'
-      +'<input type="number" inputmode="decimal" id="w'+k+'" placeholder="lastre" value="'+(suggW&&exDef.mode==="bw"&&lastAt&&lastAt.w?lastAt.w:"")+'">';
+    fields='<input type="number" inputmode="numeric" id="r'+k+'" placeholder="reps" value="'+suggR+'">';
+    if(exDef.noLoad) fields+='<span class="x">reps × '+exDef.holdSec+' s</span>';
+    else fields+='<span class="x">+</span>'
+      +'<input type="number" inputmode="decimal" id="w'+k+'" placeholder="lastre" value="'+(suggW&&lastAt&&lastAt.w?lastAt.w:"")+'">';
   }else if(exDef.mode==="band"){
     fields='<input type="text" id="b'+k+'" placeholder="banda (color/tensión)" style="width:150px" value="'+esc(suggB)+'">'
       +'<span class="x">×</span>'
@@ -653,7 +739,7 @@ function logSetRow(i,si){
     if(exDef.mode==="bw"&&st.w==null) delete st.w;
   }
   a.exercises[i].sets.push(st);
-  if(a.exercises[i].sets.length>exDef.sets && a.extraRows && a.extraRows[i]>0) a.extraRows[i]--;
+  if(a.exercises[i].sets.length>tgtSets(exDef) && a.extraRows && a.extraRows[i]>0) a.extraRows[i]--;
   saveState();
   Timer.start();
   render();
@@ -963,7 +1049,7 @@ function viewDatos(){
     +'2. Botón compartir (⬆️) → <b>"Añadir a pantalla de inicio"</b> — queda como app con su ícono, a pantalla completa.<br>'
     +'3. Tus datos se guardan en el iPad automáticamente y sobreviven a las actualizaciones de la app.<br>'
     +'4. Una vez por semana: <b>⬇️ Descargar respaldo</b> — y pega el 📋 resumen en el chat de salud para análisis.</div></div>';
-  h+='<div class="sub" style="text-align:center;margin:20px 0">Modo Atleta v'+APP_VERSION+' · plan Fase 1 (ago 2026) · las rutinas se actualizan en el chat de salud</div>';
+  h+='<div class="sub" style="text-align:center;margin:20px 0">Modo Atleta v'+APP_VERSION+' · plan Fase 1 (ago 2026) · cronograma fijo lun–sáb · las rutinas se actualizan en el chat de salud</div>';
   return h;
 }
 function fmtSets(ex){ return ex.sets.map(x=>setLabel(ex.mode,x)).join(", "); }
