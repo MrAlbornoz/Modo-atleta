@@ -199,6 +199,13 @@ a{color:var(--accent);}
 .seg{display:flex; gap:6px; flex-wrap:wrap;}
 .seg button{flex:1; min-width:64px; font-size:14px; padding:10px 6px;}
 .seg button.on{background:var(--accent); color:#fff; border-color:var(--accent); font-weight:600;}
+.seg.rpe{gap:5px;}
+.seg.rpe button{min-width:0; font-weight:700; font-size:16px; padding:11px 0;}
+.seg.rpe button.on.r1{background:var(--s1); border-color:var(--s1); color:#fff;}
+.seg.rpe button.on.r2, .seg.rpe button.on.r3{background:var(--good); border-color:var(--good); color:#fff;}
+.seg.rpe button.on.r4{background:var(--warn); border-color:var(--warn); color:#0b0b0b;}
+.seg.rpe button.on.r5{background:var(--crit); border-color:var(--crit); color:#fff;}
+.rpelab{font-size:12px; color:var(--muted); display:flex; justify-content:space-between; margin-top:3px;}
 .seg.tri button.on.g{background:var(--good); border-color:var(--good);}
 .seg.tri button.on.y{background:var(--warn); border-color:var(--warn); color:#0b0b0b;}
 .seg.tri button.on.r{background:var(--crit); border-color:var(--crit); color:#fff;}
@@ -241,7 +248,7 @@ a{color:var(--accent);}
    progresión por 1RM estimado, no volumen total.
    ============================================================ */
 
-const APP_VERSION = "2.1";
+const APP_VERSION = "2.2";
 const LS_KEY = "modoAtleta_v1";   /* NO renombrar: aquí vive el historial */
 
 const DB_STEPS = [5,10,15,20,25,35,40,50,60];
@@ -486,7 +493,7 @@ function lastPerf(exId, excludeSessionId){
     const s=S.sessions[i];
     if(s.type!=="fuerza" || s.id===excludeSessionId) continue;
     const ex=(s.exercises||[]).find(e=>e.exId===exId);
-    if(ex && ex.sets && ex.sets.length) return {date:s.date, sets:ex.sets};
+    if(ex && ex.sets && ex.sets.length) return {date:s.date, sets:ex.sets, rpe:(ex.rpe||null)};
   }
   return null;
 }
@@ -498,6 +505,19 @@ function setLabel(mode,st){
   return (st.w||0)+" lb × "+(st.r||0);
 }
 function nextDBStep(w){ for(const s of DB_STEPS){ if(s>w) return s; } return null; }
+function prevDBStep(w){ let p=null; for(const s of DB_STEPS){ if(s<w) p=s; } return p; }
+
+/* ---------- ESFUERZO PERCIBIDO (1–5) ----------
+   Regla de Federico: 1 = subir en la siguiente sesión, sin esperar.
+   5 = mantener o bajar. 2–4 = progresión normal. */
+const RPE_HELP = "1 = sin esfuerzo · 5 = muchísimo esfuerzo";
+function rpeRow(current, onclickTpl){
+  let h='<div style="margin-top:10px"><div style="font-size:12.5px;color:var(--ink-2)">¿Cómo sentiste el esfuerzo?</div><div class="seg rpe" style="margin-top:5px">';
+  for(let v=1;v<=5;v++)
+    h+='<button class="'+(current===v?"on r"+v:"")+'" onclick="'+onclickTpl.replace("%V%",v)+'">'+v+'</button>';
+  h+='</div><div class="rpelab"><span>1 · nada</span><span>5 · muchísimo</span></div></div>';
+  return h;
+}
 
 function progressionHint(exDef, last){
   if(!last) return null;
@@ -530,6 +550,8 @@ const Timer = {
   int:null, end:0,
   start(sec){
     sec = sec || (S.settings.restSec||90);
+    this.lastBeep = null;
+    audioCtx();
     this.end = Date.now()+sec*1000;
     document.getElementById("timerbar").style.display="flex";
     clearInterval(this.int);
@@ -541,19 +563,45 @@ const Timer = {
     const m=Math.floor(left/60), s=left%60;
     document.getElementById("timerCount").textContent=m+":"+String(s).padStart(2,"0");
     document.getElementById("timerbar").classList.toggle("final", left<=10);
-    if(left<=0){ this.stop(); buzz(); beep(); }
+    if(left<=10 && left>0 && left!==this.lastBeep){ this.lastBeep=left; beepCountdown(left); }
+    if(left<=0){ this.stop(); buzz(); beepEnd(); }
   },
   stop(){ clearInterval(this.int); document.getElementById("timerbar").style.display="none"; }
 };
 function buzz(){ try{ navigator.vibrate && navigator.vibrate([200,100,200]); }catch(e){} }
-function beep(freq){
+/* Un solo AudioContext, desbloqueado al primer toque (iOS lo exige) */
+let _actx=null;
+function audioCtx(){
   try{
-    const ctx=new (window.AudioContext||window.webkitAudioContext)();
+    if(!_actx) _actx=new (window.AudioContext||window.webkitAudioContext)();
+    if(_actx.state==="suspended") _actx.resume();
+    return _actx;
+  }catch(e){ return null; }
+}
+document.addEventListener("pointerdown", ()=>audioCtx(), {passive:true});
+function beep(freq, dur, vol){
+  const ctx=audioCtx(); if(!ctx) return;
+  try{
     const o=ctx.createOscillator(), g=ctx.createGain();
     o.connect(g); g.connect(ctx.destination);
-    o.frequency.value=freq||880; g.gain.value=0.15;
-    o.start(); o.stop(ctx.currentTime+0.35);
+    o.type="sine";
+    o.frequency.value=freq||880;
+    const t=ctx.currentTime, d=dur||0.35;
+    g.gain.setValueAtTime(vol||0.18, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t+d);
+    o.start(t); o.stop(t+d);
   }catch(e){}
+}
+/* Cuenta regresiva: pitido corto en cada uno de los últimos 10 s,
+   más agudo y más seguido en los últimos 3. */
+function beepCountdown(left){
+  if(left>3) beep(700, 0.10, 0.16);
+  else { beep(1150, 0.13, 0.22); setTimeout(()=>beep(1150,0.10,0.18),160); }
+}
+/* Fin: doble tono largo, distinto de la cuenta regresiva */
+function beepEnd(){
+  beep(980, 0.30, 0.25);
+  setTimeout(()=>beep(1320, 0.45, 0.25), 300);
 }
 
 /* ---------- Navegación ---------- */
@@ -705,7 +753,7 @@ function viewCierre(){
       if(last) h+='<div class="pr">Anterior ('+fmtDate(last.date)+'): '+last.sets.map(x=>setLabel(e.mode,x)).join(" · ")+'</div>';
       h+='<div class="in">';
       if(e.mode==="hold"){
-        h+='<input type="number" inputmode="numeric" id="fx_'+e.id+'_s" value="'+(cur.s!=null?cur.s:e.secs)+'" onchange="setEx(\''+e.id+'\')"><span>seg</span>';
+        h+='<input type="number" inputmode="numeric" id="fx_'+e.id+'_s" value="'+(cur.s!=null?cur.s:prescribed.s)+'" onchange="setEx(\''+e.id+'\')"><span>seg</span>';
       }else if(e.mode==="band"){
         h+='<input type="text" id="fx_'+e.id+'_b" placeholder="banda" value="'+esc(cur.band||prescribed.band||"")+'" style="width:110px" onchange="setEx(\''+e.id+'\')"><span>×</span>'
           +'<input type="number" inputmode="numeric" id="fx_'+e.id+'_r" value="'+rp+'" onchange="setEx(\''+e.id+'\')"><span>reps</span>';
@@ -718,8 +766,9 @@ function viewCierre(){
       }
       h+='<input type="number" inputmode="numeric" id="fx_'+e.id+'_n" value="'+st+'" onchange="setEx(\''+e.id+'\')" style="width:56px"><span>series</span>';
       h+='</div>';
-      const hint=progressionHint(e,last);
-      if(hint) h+='<div class="hint up" style="margin:6px 0 0">📈 '+esc(hint)+'</div>';
+      h+= rpeRow(cur.rpe||null, "setRPE('"+e.id+"',%V%)");
+      const hint = prescribed.note || progressionHint(e,last);
+      if(hint) h+='<div class="hint up" style="margin:8px 0 0">📈 '+esc(hint)+'</div>';
       h+='</div>';
     }
   }
@@ -808,14 +857,54 @@ function readEx(e,d){
   d.fuerza.ex[e.id]=o;
 }
 function setEx(exId){ syncFields(); }
+function setRPE(exId, v){
+  const d=getDay(CIERRE_DATE); syncFields();
+  d.fuerza.ex[exId]=d.fuerza.ex[exId]||{};
+  d.fuerza.ex[exId].rpe = (d.fuerza.ex[exId].rpe===v)? null : v;
+  saveState(); render();
+}
+function setActRPE(i, v){
+  const ex=S.active.exercises[i];
+  ex.rpe = (ex.rpe===v)? null : v;
+  saveState(); render();
+}
 /* Prescripción: última sesión si existe, si no el arranque del plan */
 function prescribeFor(e){
   const last=lastPerf(e.id);
-  if(last && last.sets.length){
-    const best=last.sets.reduce((a,b)=> (b.w||0)>(a.w||0)? b:a, last.sets[0]);
-    return {w: best.w!=null? best.w : (e.startW||""), r: best.r!=null? best.r : (e.reps? e.reps[0]:""), band: best.band||""};
+  if(!(last && last.sets.length))
+    return {w: e.startW||"", r: e.reps? e.reps[0] : "", band:"", s: e.secs||30, note:null};
+  const best=last.sets.reduce((a,b)=> (b.w||0)>(a.w||0)? b:a, last.sets[0]);
+  let w = best.w!=null? best.w : (e.startW||"");
+  let r = best.r!=null? best.r : (e.reps? e.reps[0]:"");
+  let sec = best.s!=null? best.s : (e.secs||30);
+  const band = best.band||"";
+  const lo = e.reps? e.reps[0] : null, hi = e.reps? e.reps[1] : null;
+  const rpe = last.rpe;
+  let note = null;
+
+  if(rpe===1){
+    if(e.mode==="hold"){ sec=sec+10; note="Esfuerzo 1 la vez pasada → subimos a "+sec+" s."; }
+    else if(e.mode==="band"){ note="Esfuerzo 1 la vez pasada → banda más fuerte, o aléjate del anclaje. Anota la nueva tensión."; }
+    else if(hi && r<hi){ r=r+1; note="Esfuerzo 1 la vez pasada → subimos a "+r+" reps."; }
+    else if(e.mode==="bw"){ r=r+2; note="Esfuerzo 1 la vez pasada y ya estabas al tope → "+r+" reps, o agrega lastre."; }
+    else {
+      const nx=nextDBStep(w);
+      if(nx){ note="Esfuerzo 1 con "+w+" lb al tope del rango → subimos a "+nx+" lb y volvemos a "+lo+" reps."; w=nx; r=lo; }
+      else note="Esfuerzo 1 en el techo del inventario ("+w+" lb) → suma una serie o tempo 3-1-1.";
+    }
+  } else if(rpe===2){
+    if(hi && r<hi && e.mode!=="hold" && e.mode!=="band"){ r=r+1; note="Esfuerzo 2 → +1 rep, margen de sobra."; }
+  } else if(rpe===5){
+    if(e.mode==="hold"){ note="Esfuerzo 5 la vez pasada → mantén "+sec+" s, no lo subas."; }
+    else if(e.mode==="band"){ note="Esfuerzo 5 la vez pasada → misma banda o más suave. No progreses hoy."; }
+    else if(lo && r>lo){ r=lo; note="Esfuerzo 5 la vez pasada → mismo peso, bajamos a "+lo+" reps."; }
+    else {
+      const pv=prevDBStep(w);
+      if(pv && (e.mode==="w"||e.mode==="carry")){ note="Esfuerzo 5 con "+w+" lb ya en el piso del rango → bajamos a "+pv+" lb."; w=pv; }
+      else note="Esfuerzo 5 → mantén y consolida antes de subir.";
+    }
   }
-  return {w: e.startW||"", r: e.reps? e.reps[0] : "", band:""};
+  return {w, r, band, s:sec, note};
 }
 function targetLabel(e){
   if(e.mode==="hold") return e.sets+" × "+e.secs+" s"+(e.perSide?" c/lado":"");
@@ -849,7 +938,7 @@ function saveCierre(){
         else if(e.mode==="bw"){ if(o.r) sets.push(o.w? {r:o.r,w:o.w} : {r:o.r}); }
         else { if(o.r && o.w!=null) sets.push({w:o.w, r:o.r}); }
       }
-      if(sets.length) exs.push({exId:e.id, name:e.name, mode:e.mode, sets});
+      if(sets.length) exs.push({exId:e.id, name:e.name, mode:e.mode, sets, rpe:(o.rpe||null)});
     }
     if(exs.length) S.sessions.push({id:uid(), date:iso, type:"fuerza", src:"cierre",
       routineId:r.id, name:r.name, exercises:exs, note:d.nota||""});
@@ -883,7 +972,7 @@ function cierreText(iso){
       else if(e.mode==="band") v=(x.band||"banda")+" × "+(x.r||"?");
       else if(e.mode==="bw") v=(x.r||"?")+" reps"+(x.w?" +"+x.w+" lb":"");
       else v=(x.w!=null?x.w:"?")+" lb × "+(x.r||"?");
-      o+="  - "+e.name.replace(/[🏌️🎾⭐]/g,"").trim()+": "+(x.sets||e.sets)+" × "+v+"\n";
+      o+="  - "+e.name.replace(/[🏌️🎾⭐🏃]/g,"").trim()+": "+(x.sets||e.sets)+" × "+v+(x.rpe? "  [esfuerzo "+x.rpe+"/5]":"")+"\n";
     }
   } else o+="Fuerza: no\n";
   o+="Hábitos: proteína "+(d.habitos.prot||"?")+" g · "+(d.habitos.shakes||0)+" merengadas · pasos "+(d.habitos.pasos||"?")
@@ -932,11 +1021,12 @@ const Guion = {
     if(this.running){ this.running=false; clearInterval(this.int); this.int=null; }
     else{
       this.running=true;
+      audioCtx();
       if(!this.startTs) this.startTs=Date.now();
       this.int=setInterval(()=>{
         this.left--;
         if(this.left<=0){ this.next(true); }
-        else if(this.left<=3) beep(660);
+        else if(this.left<=10) beepCountdown(this.left);
         this.paint();
       },1000);
     }
@@ -945,11 +1035,11 @@ const Guion = {
   next(auto){
     if(this.i>=INTERVAL_PLAN.length-1){
       this.running=false; clearInterval(this.int); this.int=null;
-      this.i=INTERVAL_PLAN.length-1; this.left=0; buzz(); beep(990);
+      this.i=INTERVAL_PLAN.length-1; this.left=0; buzz(); beepEnd();
       this.paint(); return;
     }
     this.i++; this.left=INTERVAL_PLAN[this.i].sec;
-    if(auto){ buzz(); beep(INTERVAL_PLAN[this.i].work? 880 : 1180); }
+    if(auto){ buzz(); beepEnd(); }
     this.paint();
   },
   prev(){ if(this.i>0){ this.i--; this.left=INTERVAL_PLAN[this.i].sec; this.paint(); } },
@@ -1064,6 +1154,7 @@ function viewActiveSession(){
     if(a.extraRows && a.extraRows[i]>0){
       for(let k=0;k<a.extraRows[i];k++) h+=inputRowPre(exDef,i,tgtSets(exDef)+k,ex,last);
     }
+    if(ex.sets.length) h+= rpeRow(ex.rpe||null, "setActRPE("+i+",%V%)");
     h+='</div>';
   });
   h+='<label class="f">Notas de la sesión</label>'
@@ -1149,7 +1240,7 @@ function finishSession(){
     dd.fuerza.routineId=a.routineId;
     for(const ex of a.exercises){
       const best=ex.sets.reduce((x,y)=> (y.w||y.r||0)>(x.w||x.r||0)? y:x, ex.sets[0]);
-      dd.fuerza.ex[ex.exId]={w:best.w!=null?best.w:null, r:best.r||null, s:best.s||null, band:best.band||"", sets:ex.sets.length};
+      dd.fuerza.ex[ex.exId]={w:best.w!=null?best.w:null, r:best.r||null, s:best.s||null, band:best.band||"", sets:ex.sets.length, rpe:(ex.rpe||null)};
     }
   } else dd.habitos.mcgill=true;
   S.active=null;
@@ -1236,6 +1327,7 @@ function viewHistorial(){
           h+='<div style="margin:8px 0"><b style="font-size:14.5px">'+esc(ex.name)+'</b>';
           const best=ex.mode==="w"? Math.max(...ex.sets.map(x=>est1RM(x.w,x.r))) : 0;
           if(best) h+=' <span class="tag1rm">1RM est. '+best+' lb</span>';
+          if(ex.rpe) h+=' <span class="tag1rm">· esfuerzo '+ex.rpe+'/5</span>';
           h+='<div class="histset">'+ex.sets.map(x=>setLabel(ex.mode,x)).join(" · ")+'</div></div>';
         }
         h+='</details>';
@@ -1433,6 +1525,11 @@ function viewDatos(){
     +'<label class="f">Descanso entre pares (segundos)</label>'
     +'<input type="number" inputmode="numeric" value="'+(S.settings.restSec||90)+'" style="width:120px" onchange="S.settings.restSec=parseInt(this.value)||90;saveState()">'
     +'</div>';
+  h+='<div class="card"><b>La regla del esfuerzo (1–5)</b>'
+    +'<div class="sub" style="margin-top:6px">Al terminar cada ejercicio marcas del 1 al 5. '
+    +'<b>1</b> = la app sube peso, reps o resistencia en la siguiente sesión, sin esperar. '
+    +'<b>2</b> = +1 rep. <b>3–4</b> = progresión normal. '
+    +'<b>5</b> = mantiene o baja. Lo verás como una nota 📈 la próxima vez que abras ese ejercicio.</div></div>';
   h+='<div class="card"><b>Cómo funciona ahora</b>'
     +'<div class="sub" style="margin-top:6px">1. <b>6 am:</b> abre <b>Entrenar → Cardio Trabajo</b> y sigue el guion. No registres nada ahí.<br>'
     +'2. <b>Mar/Jue/Sáb:</b> la sesión de fuerza. Puedes seguirla en vivo o solo hacerla y anotarla al final.<br>'
@@ -1461,13 +1558,13 @@ function exportText(){
 }
 function csvEsc(v){ v=String(v==null?"":v); return /[",\n]/.test(v)? '"'+v.replace(/"/g,'""')+'"' : v; }
 function exportCSV(){
-  let rows=[["fecha","rutina","ejercicio","serie","peso_lb","reps","segundos","banda","1rm_est"]];
+  let rows=[["fecha","rutina","ejercicio","serie","peso_lb","reps","segundos","banda","1rm_est","esfuerzo_1a5"]];
   for(const s of S.sessions){
     if(s.type!=="fuerza") continue;
     for(const ex of s.exercises){
       ex.sets.forEach((st,i)=>{
         rows.push([s.date,s.name,ex.name,i+1,st.w??"",st.r??"",st.s??"",st.band??"",
-          (ex.mode==="w"&&st.w&&st.r)?est1RM(st.w,st.r):""]);
+          (ex.mode==="w"&&st.w&&st.r)?est1RM(st.w,st.r):"", ex.rpe??""]);
       });
     }
   }
