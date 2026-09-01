@@ -66,6 +66,7 @@ h3{font-size:17px; margin:16px 0 8px;}
 }
 .pill.blue{color:#fff; background:var(--s1); border-color:var(--s1);}
 .pill.orange{color:#fff; background:var(--s2); border-color:var(--s2);}
+.pill.green{color:#fff; background:var(--s3); border-color:var(--s3);}
 .pill.warn{color:var(--ink); background:transparent; border-color:var(--warn);}
 button{
   font-family:inherit; font-size:16px; border:none; border-radius:12px;
@@ -129,7 +130,6 @@ nav.tabs button.active{color:var(--accent); font-weight:600;}
 .delta{font-size:13px; font-weight:700; margin-left:6px;}
 .delta.up{color:var(--good-text);}
 .delta.dn{color:var(--crit);}
-.setrow .ghostv{color:var(--muted);}
 .setrow.pending input{border-color:var(--axis);}
 .confirmbtn{min-width:52px;}
 .kpi{display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px; margin:12px 0;}
@@ -155,6 +155,7 @@ svg text{font-family:inherit;}
   border:1px solid var(--warn); border-radius:12px; padding:10px 14px; margin:10px 0;
   font-size:14px; color:var(--ink-2);
 }
+.banner.info{border-color:var(--s1);}
 .sessionhead{display:flex; justify-content:space-between; align-items:center; gap:10px; margin:8px 0;}
 .histset{font-size:14.5px; color:var(--ink-2); font-variant-numeric:tabular-nums;}
 details{margin:4px 0;}
@@ -168,6 +169,39 @@ a{color:var(--accent);}
   font-size:12.5px; padding:4px 8px; border-radius:6px; white-space:nowrap; z-index:50;
   transform:translate(-50%,-130%); display:none; font-variant-numeric:tabular-nums;
 }
+/* --- guion de intervalos --- */
+.phasebig{
+  background:var(--surface-1); border:2px solid var(--accent); border-radius:18px;
+  padding:18px; margin:10px 0; text-align:center;
+}
+.phasebig.surge{border-color:var(--s2);}
+.phasebig .ph-t{font-size:19px; font-weight:700; letter-spacing:-0.02em;}
+.phasebig .ph-c{font-size:54px; font-weight:800; font-variant-numeric:tabular-nums; letter-spacing:-0.03em; line-height:1.05; margin:4px 0;}
+.phasebig .ph-set{display:flex; justify-content:center; gap:18px; margin-top:6px; flex-wrap:wrap;}
+.phasebig .ph-set div{font-size:13px; color:var(--muted);}
+.phasebig .ph-set div b{display:block; font-size:24px; color:var(--ink); font-weight:700; font-variant-numeric:tabular-nums;}
+.phaselist{font-size:14px;}
+.phaselist .p{display:flex; justify-content:space-between; gap:8px; padding:7px 0; border-bottom:1px solid var(--grid);}
+.phaselist .p:last-child{border-bottom:none;}
+.phaselist .p.now{font-weight:700; color:var(--accent);}
+.phaselist .p.past{opacity:.45; text-decoration:line-through;}
+.phaselist .p .m{color:var(--muted); font-variant-numeric:tabular-nums; font-weight:400;}
+.progbar{height:6px; background:var(--grid); border-radius:999px; overflow:hidden; margin:8px 0 2px;}
+.progbar i{display:block; height:100%; background:var(--accent);}
+.exrow{padding:10px 0; border-bottom:1px solid var(--grid);}
+.exrow:last-child{border-bottom:none;}
+.exrow .nm{font-size:15px; font-weight:600;}
+.exrow .pr{font-size:13px; color:var(--muted);}
+.exrow .in{display:flex; gap:6px; align-items:center; margin-top:6px;}
+.exrow .in input{width:70px; padding:8px 4px;}
+.exrow .in span{font-size:13px; color:var(--muted);}
+.pairtag{font-size:11.5px; font-weight:700; color:var(--s1); letter-spacing:.04em;}
+.seg{display:flex; gap:6px; flex-wrap:wrap;}
+.seg button{flex:1; min-width:64px; font-size:14px; padding:10px 6px;}
+.seg button.on{background:var(--accent); color:#fff; border-color:var(--accent); font-weight:600;}
+.seg.tri button.on.g{background:var(--good); border-color:var(--good);}
+.seg.tri button.on.y{background:var(--warn); border-color:var(--warn); color:#0b0b0b;}
+.seg.tri button.on.r{background:var(--crit); border-color:var(--crit); color:#fff;}
 </style>
 </head>
 <body data-palette="#2a78d6,#eb6834,#1baf7a">
@@ -183,7 +217,7 @@ a{color:var(--accent);}
 </div>
 <div class="tooltip" id="tooltip"></div>
 <nav class="tabs" id="tabs">
-  <button data-tab="hoy"><span class="ico">🏠</span>Hoy</button>
+  <button data-tab="cierre"><span class="ico">📝</span>Cierre</button>
   <button data-tab="entrenar"><span class="ico">🏋️</span>Entrenar</button>
   <button data-tab="historial"><span class="ico">📒</span>Historial</button>
   <button data-tab="progreso"><span class="ico">📈</span>Progreso</button>
@@ -193,149 +227,177 @@ a{color:var(--accent);}
 "use strict";
 /* ============================================================
    MODO ATLETA — Federico Albornoz
-   v1.0 — 5 agosto 2026
-   Registro de fuerza + cardio. Plan Fase 1 precargado.
-   Reglas fijas: sin carga axial (L2–S1) · exhalar en el esfuerzo ·
+   v2.0 — 1 septiembre 2026
+   Cambios v2.0:
+   · CIERRE DEL DÍA: un solo registro al final del día (reemplaza
+     el registro actividad por actividad como flujo principal).
+   · CARDIO TRABAJO: 45 min diarios 6am en ayunas, por intervalos,
+     con guion en pantalla (bloques <2.5 mph trabajables + surges).
+   · FUERZA: 3 sesiones (Mar/Jue/Sáb) pesadas y cortas, 4–6 reps,
+     en supersets, con el bloque de disociación golf/tenis DENTRO.
+   Reglas fijas: sin carga axial (L2–S1) · exhalar en el esfuerzo,
+   nada de Valsalva (CAC 385.9) · nunca al fallo, 1–2 en reserva ·
    la FC manda sobre el número · bandas por tensión, no libras ·
    progresión por 1RM estimado, no volumen total.
    ============================================================ */
 
-const APP_VERSION = "1.3";
-const LS_KEY = "modoAtleta_v1";
+const APP_VERSION = "2.0";
+const LS_KEY = "modoAtleta_v1";   /* NO renombrar: aquí vive el historial */
 
-/* ---------- Rutinas precargadas (Plan Fase 1, equipo de casa) ----------
-   modes: w = peso+reps · bw = corporal (reps, lastre opcional) ·
-   band = banda (tensión+reps) · hold = isométrico (segundos) ·
-   carry = acarreo (peso + pasos/metros)
-   Inventario: mancuernas 5·10·15·20·25·35·40·50·60 lb (50/60 desde 3-ago),
-   EZ bar ~180 lb máx, dips/pull-up bar, TRX, bandas, bancos, BOSU. */
 const DB_STEPS = [5,10,15,20,25,35,40,50,60];
 
+/* ---------- CARDIO TRABAJO — guion de 45 min ----------
+   Diseño: ~32 de los 45 min transcurren a ≤2.5 mph, con la
+   inclinación haciendo el trabajo → iPad arriba, llamadas y
+   lectura posibles. Los surges van por RAMPA (más carga que
+   5 mph en plano, cero impacto). El burst de 5.0 mph plano
+   queda como opción única en el surge 3, solo con espalda 🟢. */
+const INTERVAL_PLAN = [
+ {t:"Calentamiento", sec:300, spd:"2.5", inc:"2 → 6", hr:"95–110", work:true,
+  note:"Sube 1% de inclinación cada minuto. iPad arriba desde ya."},
+ {t:"Trabajo 1", sec:540, spd:"2.2", inc:"12", hr:"115–125", work:true,
+  note:"Zona 2 trabajable. Llamadas, lectura, revisión. Si puedes cantar, sube 1% de inclinación."},
+ {t:"SURGE 1 — rampa", sec:90, spd:"4.0", inc:"12", hr:"140–150", work:false,
+  note:"iPad abajo, manos libres. Paso largo, sin agarrarte de las barras."},
+ {t:"Recuperación", sec:90, spd:"2.0", inc:"4", hr:"<120", work:true,
+  note:"Respira por la nariz. Si a los 90 s no bajaste de 120, el próximo surge va más corto."},
+ {t:"Trabajo 2", sec:540, spd:"2.2", inc:"13", hr:"115–125", work:true,
+  note:"Un punto más de inclinación que el bloque 1."},
+ {t:"SURGE 2 — rampa", sec:90, spd:"4.0", inc:"13", hr:"145–155", work:false,
+  note:"Mismo esfuerzo, un grado más empinado."},
+ {t:"Recuperación", sec:90, spd:"2.0", inc:"4", hr:"<120", work:true},
+ {t:"Trabajo 3", sec:540, spd:"2.4", inc:"12", hr:"115–125", work:true,
+  note:"Bloque más rápido y algo menos empinado — cambia el patrón de paso."},
+ {t:"SURGE 3 — libre", sec:90, spd:"4.2 ó 5.0", inc:"12 ó 0", hr:"150–155", work:false,
+  note:"Aquí va el único burst de 5.0 mph, y SOLO si la espalda amaneció 🟢 y ya estás caliente. 40 s máximo, inclinación a 0 antes de acelerar. Cualquier señal en la lumbar → rampa a 4.2 y listo."},
+ {t:"Enfriamiento", sec:240, spd:"2.0", inc:"2", hr:"<110", work:true,
+  note:"No te bajes en caliente. Aquí es donde el RHR aprende a bajar."}
+];
+const INTERVAL_TOTAL = INTERVAL_PLAN.reduce((a,p)=>a+p.sec,0);
+
+/* Escalera de progresión del cardio (4 semanas) */
+const CARDIO_LADDER = [
+  "Sem 1–2: bloques de trabajo al 10–12%. Meta: terminar los 45 min sin que la FC se salga de 125 en los bloques.",
+  "Sem 3–4: 12–14%. Los surges suben a 4.2 mph.",
+  "Sem 5+: 14–15%, o suma un 4º ciclo (sesión de 57 min). Lo que suba primero es la inclinación, nunca la velocidad de los bloques."
+];
+
+/* ---------- RUTINAS DE FUERZA ----------
+   modes: w = peso+reps · bw = corporal · band = banda (tensión+reps)
+          hold = isométrico (segundos) · carry = acarreo
+   pair: A1/A2 y B1/B2 se hacen en superserie (alternando, 90 s entre pares).
+   block: "fuerza" | "disoc" (bloque de disociación golf/tenis) */
 const ROUTINES = [
 {
-  id:"A", name:"Fuerza A — Empuje", color:"blue",
-  note:"Exhala en el esfuerzo. Sin carga axial. 2–3 reps en reserva.",
+  id:"S1", name:"S1 — Empuje pesado + Golf", day:"Martes", color:"blue",
+  dur:"~42 min",
+  note:"PESADO Y CORTO: 4–6 reps, 1–2 en reserva, NUNCA al fallo. Exhala en el esfuerzo — nada de aguantar la respiración (CAC 385.9). A1/A2 y B1/B2 son superseries: alternas y descansas 90 s entre pares.",
   exercises:[
-    {id:"floorpress", name:"Floor Press — EZ Bar", mode:"w", sets:3, reps:[8,10], startW:155,
-     tip:"🔒 TOPADO POR DISCOS (155 lb). La progresión aquí es TEMPO: baja en 3 s + pausa de 2 s en el piso. No busques más peso."},
-    {id:"dip", name:"Chest Dip (paralelas)", mode:"bw", sets:3, reps:[6,10],
-     tip:"A 226 lb de corporal es tu mejor carga de empuje. Cero carga axial."},
-    {id:"incpress", name:"DB Incline Press", mode:"w", sets:3, reps:[8,12], startW:40,
-     tip:"Con las nuevas de 50/60: salto 40→50 es +25%. Sube reps antes que peso."},
-    {id:"latraise", name:"DB Lateral Raise", mode:"w", sets:3, reps:[10,15], startW:20,
-     tip:"5-ago: 15 lb × 15/15/15 sin fatiga → subido a 20 lb."},
-    {id:"triband", name:"Tríceps con banda", mode:"band", sets:3, reps:[12,15],
-     tip:"Registra color/tensión de la banda + distancia al anclaje."},
-    {id:"calf", name:"Elevación de talones ⭐", mode:"w", sets:3, reps:[20,25], startW:60,
-     tip:"5-ago: 50 lb × 25/25/25 muy fácil → 60 lb. ⚠️ TOPE FIJO EN 60: 60×2 = 120 lb colgando = carga axial en formato maleta. No escalar más."}
+    {id:"floorpress", name:"Floor Press — EZ Bar", mode:"w", sets:4, reps:[4,6], startW:170, pair:"A1", block:"fuerza",
+     tip:"Tu lift más pesado. Techo del inventario ~180 lb: cuando salgan 4×6 limpias, añade pausa de 2 s en el piso antes de subir peso."},
+    {id:"pullup", name:"Pull Up", mode:"bw", sets:4, reps:[4,6], pair:"A2", block:"fuerza",
+     tip:"La columna cuelga, no carga. Si pasas de 6 limpias, agrega lastre (mochila o mancuerna entre los pies)."},
+    {id:"incpress", name:"DB Incline Press", mode:"w", sets:3, reps:[5,7], startW:50, pair:"B1", block:"fuerza",
+     tip:"Peso POR MANCUERNA. Salto 50→60 es +20%: primero llega a 3×7 con 50."},
+    {id:"dbrow", name:"DB Row (1 brazo, apoyado)", mode:"w", sets:3, reps:[6,8], startW:60, perSide:true, pair:"B2", block:"fuerza",
+     tip:"Techo del inventario (60). Cuando salgan 3×8 por lado, progresa con pausa de 1 s arriba."},
+    {id:"mbrot", name:"🏌️ Lanzamiento rotacional — pelota 20 lb", mode:"w", sets:3, reps:[5,5], startW:20, perSide:true, block:"disoc",
+     tip:"DISOCIACIÓN: el giro arranca en la cadera, la columna solo transmite. Intención de máxima velocidad, contra pared, sin slams. Es el ejercicio que más transfiere a velocidad de swing."},
+    {id:"pallof", name:"Pallof Press — HOLD", mode:"hold", sets:2, secs:30, perSide:true, block:"disoc",
+     tip:"El freno de la rotación. Banda 70 lb en loop. Anti-rotación = seguro de la lumbar."},
+    {id:"calf", name:"Elevación de talones ⭐", mode:"w", sets:3, reps:[12,15], startW:60, block:"fuerza",
+     tip:"PRIORIDAD sarcopenia (pantorrilla 14\"). Va martes y sábado. Nunca saltarla."}
   ]
 },
 {
-  id:"B", name:"Fuerza B — Tirón + Core", color:"blue",
-  note:"La columna cuelga en dominadas — cero compresión. Pallof es HOLD, no reps.",
+  id:"S2", name:"S2 — Tirón / bisagra + Tenis", day:"Jueves", color:"blue",
+  dur:"~40 min",
+  note:"Cadera pesada sin carga axial. El bloque de tenis es abajo→arriba (patrón de saque) y salud de manguito rotador — no lo saltes: el hombro es lo primero que se rompe volviendo al tenis.",
   exercises:[
-    {id:"pullup", name:"Pull Up", mode:"bw", sets:3, reps:[4,6],
-     tip:"5 dominadas a 226 lb = fuerza relativa real."},
-    {id:"dbrow", name:"DB Row (1 brazo, apoyado)", mode:"w", sets:3, reps:[8,10], startW:50,
-     tip:"29-jul: 3×10 × 40. Con las de 50: baja reps a 8 y construye."},
-    {id:"facepull", name:"Face Pull con banda", mode:"band", sets:3, reps:[15,15]},
-    {id:"hipthrust", name:"DB Hip Thrust", mode:"w", sets:3, reps:[10,12], startW:50,
-     tip:"Rey del glúteo sin cargar la columna."},
-    {id:"ezcurl", name:"EZ-Bar Curl", mode:"w", sets:3, reps:[10,12], startW:25},
-    {id:"pallof", name:"Pallof Press — HOLD", mode:"hold", sets:3, secs:30,
-     tip:"~30 s por lado, banda 70 lb en loop. Anti-rotación = oro para L2–S1."}
+    {id:"hipthrust", name:"DB Hip Thrust", mode:"w", sets:4, reps:[5,8], startW:60, pair:"A1", block:"fuerza",
+     tip:"Dos mancuernas de 60 sobre la cadera (con toalla) = 120 lb sin comprimir la columna. Rey del glúteo para L2–S1."},
+    {id:"dip", name:"Chest Dip (paralelas)", mode:"bw", sets:4, reps:[5,8], pair:"A2", block:"fuerza",
+     tip:"A ~226 lb de corporal es tu mejor carga de empuje. Cero carga axial."},
+    {id:"bss", name:"Bulgarian Split Squat", mode:"w", sets:3, reps:[6,8], startW:40, perSide:true, pair:"B1", block:"fuerza",
+     tip:"Peso por mano. Aquí la FC se dispara: autorregula por pulso, no por el número."},
+    {id:"facepull", name:"Face Pull con banda", mode:"band", sets:3, reps:[15,15], pair:"B2", block:"fuerza",
+     tip:"Anota color/tensión de banda + distancia al anclaje, nunca libras."},
+    {id:"choplift", name:"🎾 Lift con banda (abajo → arriba)", mode:"band", sets:3, reps:[8,10], perSide:true, block:"disoc",
+     tip:"DISOCIACIÓN DE SAQUE: banda anclada abajo, tiras en diagonal hasta arriba del hombro opuesto. Gira la cadera primero, hombros después. Termina alto SIN arquear la lumbar."},
+    {id:"extrot", name:"🎾 Rotación externa de hombro — mini banda", mode:"band", sets:2, reps:[12,15], perSide:true, block:"disoc",
+     tip:"Codo pegado al costado, 90°. Manguito rotador = el seguro del saque. Lento, sin compensar con el tronco."},
+    {id:"tspine", name:"Extensión torácica sobre foam roller", mode:"hold", sets:2, secs:45, block:"disoc",
+     tip:"Si la torácica no da la rotación, la lumbar la pone — y tu lumbar no está para prestarla."}
   ]
 },
 {
-  id:"C", name:"Fuerza C — Full body / Unilateral", color:"blue",
-  note:"Unilateral: a una extremidad, 40–50 lb sí pesan. FC manda (el búlgaro dispara pulso).",
+  id:"S3", name:"S3 — Full body pesado + Potencia", day:"Sábado", color:"blue",
+  dur:"~45 min",
+  note:"La sesión más completa de la semana. Termina con carry y chop: los dos ejercicios que más transfieren a golf y tenis a la vez.",
   exercises:[
-    {id:"bss", name:"Bulgarian Split Squat", mode:"bw", sets:3, reps:[8,10], perSide:true,
-     tip:"29-jul: corporal (226 lb) ya es carga real. Aquí sube más la FC — autorregula."},
-    {id:"stepup", name:"Step-up al banco", mode:"w", sets:3, reps:[8,10], startW:20, perSide:true},
-    {id:"dbbench", name:"DB Bench Press", mode:"w", sets:3, reps:[8,10], startW:50,
-     tip:"16-jul: 40×12 'como si nada'. Hoy estrena las de 50 — baja a 8 reps y construye."},
-    {id:"rowuni", name:"Remo unilateral con apoyo", mode:"w", sets:3, reps:[8,10], startW:50, perSide:true},
-    {id:"carry", name:"Suitcase Carry", mode:"carry", sets:3, reps:[40,40], startW:50,
-     tip:"Anota peso + pasos por lado. Core anti-flexión lateral sin comprimir."},
-    {id:"woodchop", name:"Wood Chop con banda", mode:"band", sets:3, reps:[10,12], perSide:true},
-    {id:"calf2", name:"Elevación de talones ⭐", mode:"w", sets:3, reps:[20,25], startW:60,
-     tip:"Va 2×/semana. Prioridad sarcopenia. ⚠️ Tope fijo en 60 lb por mancuerna."}
+    {id:"dbbench", name:"DB Bench Press", mode:"w", sets:4, reps:[5,6], startW:60, pair:"A1", block:"fuerza",
+     tip:"Techo del inventario. 60×6 limpias → suma una 5ª serie o tempo 3-1-1, no más reps."},
+    {id:"rowuni", name:"Remo unilateral con apoyo", mode:"w", sets:4, reps:[6,8], startW:60, perSide:true, pair:"A2", block:"fuerza"},
+    {id:"stepup", name:"Step-up al banco", mode:"w", sets:3, reps:[8,8], startW:40, perSide:true, pair:"B1", block:"fuerza",
+     tip:"Sube sin impulso de la pierna de abajo. Baja controlado — ahí está el trabajo."},
+    {id:"ezcurl", name:"EZ-Bar Curl", mode:"w", sets:3, reps:[6,8], startW:55, pair:"B2", block:"fuerza"},
+    {id:"woodchop", name:"🏌️ Wood Chop con banda (arriba → abajo)", mode:"band", sets:3, reps:[8,10], perSide:true, block:"disoc",
+     tip:"DISOCIACIÓN DE DOWNSWING: es el espejo del lift del jueves. Cadera manda, columna estable, sin flexión cargada."},
+    {id:"carry", name:"Suitcase Carry", mode:"carry", sets:3, reps:[40,40], startW:60, perSide:true, block:"disoc",
+     tip:"Anti-flexión lateral: la base de sostener la postura en el swing y en el golpe de fondo. Anota peso + pasos por lado."},
+    {id:"calf2", name:"Elevación de talones ⭐", mode:"w", sets:3, reps:[12,15], startW:60, block:"fuerza",
+     tip:"Segunda dosis de la semana. Prioridad sarcopenia."}
   ]
 },
 {
-  id:"G", name:"Golf — Rotación y Potencia", color:"orange",
-  note:"Rotar desde la CADERA, columna estable (disociación). Sin slams. Exhala en cada lanzamiento. 2×/semana, ideal tras Zona 2 (~25 min).",
+  id:"M", name:"M — McGill Big 3 + Movilidad (diario)", day:"Diario", color:"orange",
+  dur:"~8 min",
+  note:"Pirámide 6-4-2: cada repetición se sostiene ~10 s. Antes de cualquier sesión, y también en días de descanso. Espalda neutra siempre. En días de golf: temprano, nunca justo antes de jugar. El McGill NUNCA se recorta, ni con readiness baja.",
   exercises:[
-    {id:"hipswitch", name:"90/90 Hip Switch", mode:"bw", sets:2, reps:[10,12], perSide:true,
-     tip:"Disociación de cadera — la base del backswing. Suave, sin rebote."},
-    {id:"palrot", name:"Pallof Press Rotacional", mode:"band", sets:3, reps:[10,12], perSide:true,
-     tip:"Banda anclada. Rotación controlada desde la cadera con brazos extendidos, columna neutra."},
-    {id:"choplift", name:"Chop & Lift con banda", mode:"band", sets:3, reps:[10,12], perSide:true,
-     tip:"Leñador diagonal: alto→bajo y bajo→alto. El patrón del swing con carga."},
-    {id:"mbrot", name:"Lanzamiento rotacional — pelota 20 lb", mode:"w", sets:3, reps:[6,8], perSide:true, startW:20,
-     tip:"Contra pared. Potencia desde la cadera, columna neutra, exhalando. Aquí vive la velocidad del drive."},
-    {id:"mbchest", name:"Chest Pass — pelota 20 lb", mode:"w", sets:3, reps:[6,8], startW:20,
-     tip:"Explosivo, exhalando. Potencia de empuje sin carga axial."},
-    {id:"bosugolf", name:"BOSU — equilibrio 1 pierna", mode:"hold", sets:2, secs:30, perSide:true,
-     tip:"Estabilidad del finish. Progresión: ojos cerrados."}
-  ]
-},
-{
-  id:"M", name:"McGill Big 3 (diario)", color:"orange",
-  note:"PIRÁMIDE DESCENDENTE 6-4-2. Cada repetición es un HOLD de 8–10 s, no un movimiento rápido. Espalda NEUTRA siempre — cero flexión lumbar repetida (L2–S1 + estenosis foraminal). Descanso ~20 s entre escalones.",
-  exercises:[
-    {id:"curlup", name:"Curl-up modificado", mode:"bw", sets:3, pyramid:[6,4,2], holdSec:10, noLoad:true,
-     tip:"Manos bajo la lumbar, una rodilla flexionada. Levanta SOLO cabeza y hombros unos centímetros y AGUANTA 8–10 s. La lumbar no se despega ni se aplana."},
-    {id:"sideplank", name:"Side Plank", mode:"bw", sets:3, pyramid:[6,4,2], holdSec:10, perSide:true, noLoad:true,
-     tip:"Cada rep = subir la cadera y aguantar 8–10 s, luego bajar. Rodillas flexionadas si hace falta. Los dos lados."},
-    {id:"birddog", name:"Bird-dog", mode:"bw", sets:3, pyramid:[6,4,2], holdSec:10, perSide:true, noLoad:true,
-     tip:"Brazo y pierna contraria extendidos, aguanta 8–10 s. Cadera cuadrada, sin arquear la lumbar. Barre el piso con la mano al volver."}
+    {id:"curlup", name:"Curl-up modificado", mode:"bw", sets:3, reps:[2,6], block:"fuerza",
+     tip:"Pirámide 6 → 4 → 2, cada rep con hold de 10 s. Una rodilla flexionada, manos bajo la lumbar."},
+    {id:"sideplank", name:"Side Plank", mode:"bw", sets:3, reps:[2,6], perSide:true, block:"fuerza",
+     tip:"Pirámide 6 → 4 → 2, hold de 10 s por rep."},
+    {id:"birddog", name:"Bird-dog", mode:"bw", sets:3, reps:[2,6], perSide:true, block:"fuerza",
+     tip:"Pirámide 6 → 4 → 2, hold de 10 s por rep. Puño cerrado al frente, talón empujando atrás."},
+    {id:"hipswitch", name:"90/90 Hip Switch", mode:"bw", sets:2, reps:[10,12], perSide:true, block:"disoc",
+     tip:"Rotación interna/externa de cadera. Es el seguro de la lumbar: la rotación que da la cadera es rotación que no pone la columna."},
+    {id:"openbooks", name:"Open Books (rotación torácica)", mode:"bw", sets:2, reps:[10,10], perSide:true, block:"disoc"}
   ]
 }
 ];
 
-/* Cardio types */
+/* Calendario semanal */
+const WEEK_PLAN = [
+  {d:"Lunes",     c:"Cardio Trabajo 45 min", f:"—"},
+  {d:"Martes",    c:"Cardio Trabajo 45 min", f:"S1 — Empuje + Golf"},
+  {d:"Miércoles", c:"Cardio Trabajo 45 min", f:"—"},
+  {d:"Jueves",    c:"Cardio Trabajo 45 min", f:"S2 — Tirón + Tenis"},
+  {d:"Viernes",   c:"Cardio Trabajo 45 min", f:"—"},
+  {d:"Sábado",    c:"Cardio Trabajo 45 min", f:"S3 — Full body"},
+  {d:"Domingo",   c:"Caminata libre",        f:"—"}
+];
+const DOW_ROUTINE = {2:"S1", 4:"S2", 6:"S3"};  /* 0=dom */
+
+/* Cardio types (registro manual / otras modalidades) */
 const CARDIO_TYPES = [
-  {id:"zona2", name:"Zona 2 — MyRun", target:"3.0–3.5 mph · incl 4–12% · 40–50 min · FC 115–125",
+  {id:"trabajo", name:"Cardio Trabajo — intervalos 45 min", target:"3 ciclos: 9 min a 2.2–2.4 mph / 12–13% + surge 90 s. FC bloques 115–125.",
+   fields:["min","hrAvg","hrMax","incline","dist","kcal"]},
+  {id:"zona2", name:"Zona 2 continua — MyRun", target:"3.0–3.5 mph · incl 4–12% · 40–50 min · FC 115–125",
    fields:["min","hrAvg","hrMax","speed","incline","dist","kcal"]},
-  {id:"futbol", name:"Fútbol salón", target:"La percepción subestima — usa el dato del reloj. Sin síntomas = seguir; dolor torácico/mareo = parar.",
+  {id:"futbol", name:"Fútbol salón", target:"La percepción subestima — usa el dato del reloj. Dolor torácico, disnea desproporcionada o mareo = parar.",
    fields:["min","hrAvg","hrMax","kcal"]},
-  {id:"golf", name:"Golf", target:"Caminando si se puede. ¿Sustituto 0.0%? Anótalo en notas.",
+  {id:"golf", name:"Golf", target:"Caminando si se puede. El golf NO sustituye cardio ni fuerza.",
    fields:["min","hrAvg","kcal"]},
+  {id:"tenis", name:"Tenis", target:"Nunca en frío: 10 min de movilidad + swings progresivos antes del primer saque.",
+   fields:["min","hrAvg","hrMax","kcal"]},
   {id:"rampa", name:"Test de rampa VO₂max", target:"3.5 mph fijo · +2% incl cada 2 min · hasta ~150 bpm. Anota inclinación final + tiempo + FC final.",
    fields:["min","hrMax","incline","kcal"]},
   {id:"caminata", name:"Caminata", target:"Ritmo conversacional. Suma pasos.",
-   fields:["min","hrAvg","dist","kcal"]},
-  {id:"otro", name:"Otro cardio", target:"", fields:["min","hrAvg","hrMax","dist","kcal"]}
+   fields:["min","hrAvg","dist","kcal"]}
 ];
 const CARDIO_FIELD_LABELS = {min:"Duración (min)", hrAvg:"FC promedio", hrMax:"FC máx",
-  speed:"Velocidad (mph)", incline:"Inclinación (%)", dist:"Distancia (mi)", kcal:"Calorías"};
-
-/* Checklist diario (del plan) */
-const CHECKLIST = [
-  {id:"mcgill", t:"McGill Big 3", d:"Pirámide 6-4-2 con hold — todos los días"},
-  {id:"sesion", t:"Sesión programada", d:"La del cronograma de arriba"},
-  {id:"prot1", t:"Merengada 1 — 1:00 PM", d:"~50 g · va aunque no haya hambre (tirzepatide)"},
-  {id:"prot2", t:"Merengada 2 — 5:30 PM", d:"~50 g · va aunque no haya hambre (tirzepatide)"},
-  {id:"crea", t:"Creatina 5 g", d:"Todos los días, también en descanso"},
-  {id:"pasos", t:"8,000+ pasos", d:"Meta: subir a 9,500"}
-];
-
-/* ---------- Cronograma semanal fijo (v1.3) ----------
-   Federico no decide qué entrenar: la app se lo dice.
-   0 = lunes … 6 = domingo */
-const WEEK_PLAN = [
-  {d:"Lunes",     items:[{k:"r", id:"A", label:"Fuerza A — Empuje"}, {k:"r", id:"M", label:"McGill Big 3"}]},
-  {d:"Martes",    items:[{k:"c", id:"zona2", label:"Zona 2 — 40 min · FC 115–125"}, {k:"r", id:"G", label:"Golf — Rotación"}, {k:"r", id:"M", label:"McGill Big 3"}]},
-  {d:"Miércoles", items:[{k:"r", id:"B", label:"Fuerza B — Tirón + Core"}, {k:"r", id:"M", label:"McGill Big 3"}]},
-  {d:"Jueves",    items:[{k:"r", id:"M", label:"McGill Big 3 + movilidad (AM)"}, {k:"c", id:"futbol", label:"⚽ Fútbol (PM)"}],
-   nota:"Ventana de riesgo documentada: post-partido. Plan de cerveza 0.0% decidido ANTES de salir."},
-  {d:"Viernes",   items:[{k:"c", id:"zona2", label:"Zona 2 de recuperación"}, {k:"r", id:"M", label:"McGill Big 3"}],
-   nota:"Respaldo JSON al proyecto + pegar el 📋 resumen en el chat de salud."},
-  {d:"Sábado",    items:[{k:"r", id:"C", label:"Fuerza C — Unilateral"}, {k:"r", id:"G", label:"Golf — Rotación"}, {k:"r", id:"M", label:"McGill Big 3"}]},
-  {d:"Domingo",   items:[], nota:"🛑 DESCANSO TOTAL. Creatina y proteína siguen. No entrenar."}
-];
+  speed:"Velocidad (mph)", incline:"Inclinación máx (%)", dist:"Distancia (mi)", kcal:"Calorías"};
 </script>
 <script>
 /* ---------- Estado ---------- */
@@ -346,7 +408,7 @@ function loadState(){
     const raw = localStorage.getItem(LS_KEY);
     if(raw) return JSON.parse(raw);
   }catch(e){ MEM_FALLBACK = true; }
-  return memStore || {sessions:[], checklist:{}, settings:{restSec:90}, active:null};
+  return memStore || {sessions:[], checklist:{}, days:{}, lowReadiness:{}, settings:{restSec:90}, active:null};
 }
 function saveState(){
   S.settings = S.settings || {restSec:90};
@@ -354,24 +416,31 @@ function saveState(){
   catch(e){ MEM_FALLBACK = true; memStore = S; }
 }
 let S = loadState();
-S.sessions = S.sessions || []; S.checklist = S.checklist || {};
-S.settings = S.settings || {restSec:90};
+S.sessions = S.sessions || []; S.checklist = S.checklist || {}; S.days = S.days || {};
 S.lowReadiness = S.lowReadiness || {};
+S.settings = S.settings || {restSec:90};
 
-/* Migración v1.2 → v1.3: el check único de proteína se parte en dos.
-   Si estaba marcado, se asume que las dos merengadas se tomaron. */
-(function migrateProt(){
-  let touched=false;
-  for(const d in S.checklist){
-    const c=S.checklist[d];
-    if(c && Object.prototype.hasOwnProperty.call(c,"prot")){
-      if(c.prot1===undefined) c.prot1 = !!c.prot;
-      if(c.prot2===undefined) c.prot2 = !!c.prot;
-      delete c.prot; touched=true;
-    }
-  }
-  if(touched) saveState();
-})();
+/* Readiness baja (heredado de v1.3): 1 serie menos por ejercicio, mínimo 2.
+   El McGill nunca se recorta. */
+function isLow(iso){ return !!(S.lowReadiness && S.lowReadiness[iso||todayISO()]); }
+function toggleLowReadiness(iso){
+  const t=iso||todayISO();
+  if(typeof syncFields==="function") syncFields();
+  if(S.lowReadiness[t]) delete S.lowReadiness[t]; else S.lowReadiness[t]=true;
+  /* el número de series se recalcula: borramos el valor guardado, no los pesos */
+  const d=S.days&&S.days[t];
+  if(d&&d.fuerza&&d.fuerza.ex) for(const k in d.fuerza.ex) delete d.fuerza.ex[k].sets;
+  saveState(); render();
+}
+function tgtSetsFor(exDef, routineId, iso){
+  if(routineId==="M") return exDef.sets;
+  return isLow(iso)? Math.max(2, exDef.sets-1) : exDef.sets;
+}
+function tgtSets(exDef){
+  const a=S.active;
+  if(a && a.low && a.routineId!=="M") return Math.max(2, exDef.sets-1);
+  return exDef.sets;
+}
 
 function todayISO(){ const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
 function fmtDate(iso){
@@ -379,11 +448,15 @@ function fmtDate(iso){
   const dt=new Date(y,m-1,d);
   return dt.toLocaleDateString("es-ES",{weekday:"short", day:"numeric", month:"short"});
 }
+function dowOf(iso){ const [y,m,d]=iso.split("-").map(Number); return new Date(y,m-1,d).getDay(); }
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
 function est1RM(w,r){ if(!w||!r) return 0; return Math.round(w*(1+r/30)); }
 function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function mmss(sec){ const m=Math.floor(sec/60), s=Math.round(sec%60); return m+":"+String(s).padStart(2,"0"); }
 
-/* Última sesión donde aparece un ejercicio (para "la vez pasada") */
+function routineById(id){ return ROUTINES.find(r=>r.id===id)||null; }
+
+/* Última vez que se registró un ejercicio */
 function lastPerf(exId, excludeSessionId){
   for(let i=S.sessions.length-1;i>=0;i--){
     const s=S.sessions[i];
@@ -397,35 +470,28 @@ function setLabel(mode,st){
   if(mode==="hold") return (st.s||0)+" s" + (st.band? " · "+st.band : "");
   if(mode==="band") return (st.band||"banda")+" × "+(st.r||0);
   if(mode==="carry") return (st.w||0)+" lb × "+(st.r||0)+" pasos";
-  if(mode==="bw"){
-    if(st.r==null && st.s!=null) return st.s+" s";
-    return (st.w? "+"+st.w+" lb × " : "") + (st.r||0) + (st.w?"":" reps");
-  }
+  if(mode==="bw") return (st.w? "+"+st.w+" lb × " : "") + (st.r||0) + (st.w?"":" reps");
   return (st.w||0)+" lb × "+(st.r||0);
 }
-function nextDBStep(w){
-  for(const s of DB_STEPS){ if(s>w) return s; }
-  return null;
-}
+function nextDBStep(w){ for(const s of DB_STEPS){ if(s>w) return s; } return null; }
 
-/* Sugerencia de progresión: todas las series al tope del rango → subir */
 function progressionHint(exDef, last){
-  if(!last || exDef.pyramid) return null;
+  if(!last) return null;
   const topReps = exDef.reps ? exDef.reps[1] : null;
   if(exDef.mode==="w"){
     const sets=last.sets.filter(s=>s.r);
     if(sets.length>=exDef.sets && sets.every(s=>s.r>=topReps)){
       const w=Math.max(...sets.map(s=>s.w||0));
       const nxt=nextDBStep(w);
-      if(exDef.id==="floorpress") return "Todas las series al tope ("+topReps+"). Sube +5 lb en discos o añade pausa de 2 s abajo.";
-      if(nxt && nxt-w>10) return "Todas al tope con "+w+" lb. El salto a "+nxt+" es grande (+"+(nxt-w)+"): prueba 1–2 series con "+nxt+" y completa con "+w+", o suma tempo 3-1-1.";
-      if(nxt) return "Todas las series al tope con "+w+" lb → sube a "+nxt+" lb.";
-      return "Techo del inventario ("+w+" lb): progresa con tempo, pausas o más series.";
+      if(exDef.id==="floorpress") return "Todas al tope ("+topReps+"). Sube +5 lb en discos o añade pausa de 2 s abajo.";
+      if(nxt && nxt-w>10) return "Todas al tope con "+w+" lb. El salto a "+nxt+" es grande (+"+(nxt-w)+"): 1–2 series con "+nxt+" y completa con "+w+", o tempo 3-1-1.";
+      if(nxt) return "Todas al tope con "+w+" lb → sube a "+nxt+" lb.";
+      return "Techo del inventario ("+w+" lb): progresa con tempo, pausas o una serie más — no con más reps.";
     }
   }else if(exDef.mode==="bw"){
     const sets=last.sets.filter(s=>s.r);
     if(sets.length>=exDef.sets && sets.every(s=>s.r>=topReps))
-      return "Todas al tope → suma 1–2 reps por serie o añade una 4ª serie.";
+      return "Todas al tope → agrega lastre o una serie más.";
   }else if(exDef.mode==="hold"){
     const sets=last.sets.filter(s=>s.s);
     if(sets.length>=exDef.sets && sets.every(s=>s.s>=exDef.secs))
@@ -451,30 +517,28 @@ const Timer = {
     const m=Math.floor(left/60), s=left%60;
     document.getElementById("timerCount").textContent=m+":"+String(s).padStart(2,"0");
     document.getElementById("timerbar").classList.toggle("final", left<=10);
-    if(left<=0){
-      this.stop();
-      try{ navigator.vibrate && navigator.vibrate([200,100,200]); }catch(e){}
-      this.beep();
-    }
+    if(left<=0){ this.stop(); buzz(); beep(); }
   },
-  stop(){ clearInterval(this.int); document.getElementById("timerbar").style.display="none"; },
-  beep(){
-    try{
-      const ctx=new (window.AudioContext||window.webkitAudioContext)();
-      const o=ctx.createOscillator(), g=ctx.createGain();
-      o.connect(g); g.connect(ctx.destination);
-      o.frequency.value=880; g.gain.value=0.15;
-      o.start(); o.stop(ctx.currentTime+0.35);
-    }catch(e){}
-  }
+  stop(){ clearInterval(this.int); document.getElementById("timerbar").style.display="none"; }
 };
+function buzz(){ try{ navigator.vibrate && navigator.vibrate([200,100,200]); }catch(e){} }
+function beep(freq){
+  try{
+    const ctx=new (window.AudioContext||window.webkitAudioContext)();
+    const o=ctx.createOscillator(), g=ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.frequency.value=freq||880; g.gain.value=0.15;
+    o.start(); o.stop(ctx.currentTime+0.35);
+  }catch(e){}
+}
 
 /* ---------- Navegación ---------- */
-let TAB="hoy";
+let TAB="cierre";
 document.getElementById("tabs").addEventListener("click",e=>{
   const b=e.target.closest("button"); if(!b) return;
-  TAB=b.dataset.tab; render();
+  TAB=b.dataset.tab; SUB=null; render();
 });
+let SUB=null;  /* subvista dentro de Entrenar: "guion" | "cardio" */
 function setActiveTab(){
   document.querySelectorAll("#tabs button").forEach(b=>b.classList.toggle("active",b.dataset.tab===TAB));
 }
@@ -482,204 +546,505 @@ function render(){
   setActiveTab();
   document.getElementById("hdrDate").textContent = fmtDate(todayISO());
   const v=document.getElementById("view");
-  if(TAB==="hoy") v.innerHTML=viewHoy();
-  else if(TAB==="entrenar") v.innerHTML=viewEntrenar();
+  if(TAB==="cierre") v.innerHTML=viewCierre();
+  else if(TAB==="entrenar"){
+    if(SUB==="guion"){ v.innerHTML=viewGuion(); Guion.paint(); }
+    else if(SUB==="cardio") v.innerHTML=viewCardioForm();
+    else v.innerHTML=viewEntrenar();
+  }
   else if(TAB==="historial") v.innerHTML=viewHistorial();
   else if(TAB==="progreso"){ v.innerHTML=viewProgreso(); drawCharts(); }
   else if(TAB==="datos") v.innerHTML=viewDatos();
-  window.scrollTo(0,0);
+  if(SUB!=="guion") window.scrollTo(0,0);
 }
 </script>
 <script>
-/* ---------- VISTA: HOY ---------- */
-function weekSessions(){
-  const now=new Date(); const day=(now.getDay()+6)%7; // lunes=0
+/* ============================================================
+   VISTA: CIERRE DEL DÍA  — el flujo principal
+   Un solo registro al final del día. Escribe en S.days y además
+   genera las sesiones (fuerza/cardio) para que el historial y
+   las gráficas de progresión sigan funcionando igual.
+   ============================================================ */
+function blankDay(iso){
+  return {
+    date: iso,
+    cardio:{done:null, min:45, hrAvg:"", hrMax:"", cycles:3, incline:"", surge5:false, dist:"", kcal:""},
+    fuerza:{routineId: DOW_ROUTINE[dowOf(iso)] || "", asPlanned:false, ex:{}, },
+    habitos:{prot:"", crea:false, pasos:"", shakes:0, mcgill:false},
+    salud:{sleepH:"", sleepScore:"", hrv:"", rhr:"", espalda:"", piel:""},
+    nota:"",
+    saved:false
+  };
+}
+function getDay(iso){
+  if(!S.days[iso]) S.days[iso]=blankDay(iso);
+  const d=S.days[iso];
+  d.cardio=d.cardio||{}; d.fuerza=d.fuerza||{ex:{}}; d.fuerza.ex=d.fuerza.ex||{};
+  d.habitos=d.habitos||{}; d.salud=d.salud||{};
+  return d;
+}
+let CIERRE_DATE = todayISO();
+
+function weekCount(){
+  const now=new Date(); const day=(now.getDay()+6)%7;
   const mon=new Date(now); mon.setDate(now.getDate()-day); mon.setHours(0,0,0,0);
   const monISO=mon.getFullYear()+"-"+String(mon.getMonth()+1).padStart(2,"0")+"-"+String(mon.getDate()).padStart(2,"0");
-  let fuerza=0, cardio=0;
-  for(const s of S.sessions){
-    if(s.date>=monISO){
-      if(s.type==="fuerza" && s.routineId!=="M" && s.routineId!=="G") fuerza++;
-      if(s.type==="cardio" && (s.cardio.kind==="zona2"||s.cardio.kind==="futbol"||s.cardio.kind==="rampa")) cardio++;
-    }
+  let fuerza=0, cardio=0, dias=0;
+  for(const iso of Object.keys(S.days)){
+    if(iso<monISO) continue;
+    const d=S.days[iso]; if(!d.saved) continue;
+    dias++;
+    if(d.fuerza && d.fuerza.routineId && d.fuerza.routineId!=="M" && d.fuerza.routineId!=="") fuerza++;
+    if(d.cardio && d.cardio.done) cardio++;
   }
-  return {fuerza,cardio};
+  return {fuerza,cardio,dias};
 }
-function viewHoy(){
-  const t=todayISO();
-  const chk=S.checklist[t]||{};
-  const wk=weekSessions();
-  const todays=S.sessions.filter(s=>s.date===t);
+function streakCardio(){
+  let n=0; const d=new Date();
+  for(let i=0;i<400;i++){
+    const iso=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+    const day=S.days[iso];
+    if(day && day.saved && day.cardio && day.cardio.done) n++;
+    else if(i>0 || (day&&day.saved)) break;
+    d.setDate(d.getDate()-1);
+  }
+  return n;
+}
+
+function viewCierre(){
+  const iso=CIERRE_DATE;
+  const d=getDay(iso);
+  const wk=weekCount();
+  const dow=dowOf(iso);
+  const planR=DOW_ROUTINE[dow]||null;
   let h="";
-  if(MEM_FALLBACK) h+='<div class="banner">⚠️ El almacenamiento no está disponible en esta vista — los datos NO se guardarán al cerrar. Abre la app en Safari y usa Exportar como respaldo.</div>';
-  h+='<h2>Hoy</h2>';
+  if(MEM_FALLBACK) h+='<div class="banner">⚠️ El almacenamiento no está disponible aquí — los datos NO se guardarán al cerrar. Abre la app en Safari y usa Exportar como respaldo.</div>';
+
+  h+='<div class="row between"><h2 style="margin:14px 0 6px">Cierre del día</h2>'
+    +'<input type="date" id="cierreDate" value="'+iso+'" style="width:auto;padding:6px 10px;font-size:14px" onchange="CIERRE_DATE=this.value;render()"></div>';
+  h+='<div class="sub" style="color:var(--muted);font-size:14px;margin-bottom:6px">'
+    +(d.saved? '✅ Ya cerraste este día — puedes corregir y volver a guardar.' : 'Un solo registro al final del día. Nada de anotar actividad por actividad.')+'</div>';
+
   h+='<div class="kpi">'
     +'<div class="tile"><div class="v">'+wk.fuerza+'<span style="font-size:15px;color:var(--muted)">/3</span></div><div class="l">Fuerza esta semana</div></div>'
-    +'<div class="tile"><div class="v">'+wk.cardio+'<span style="font-size:15px;color:var(--muted)">/2</span></div><div class="l">Zona 2 / fútbol</div></div>'
-    +'<div class="tile"><div class="v">'+S.sessions.length+'</div><div class="l">Sesiones en el log</div></div>'
+    +'<div class="tile"><div class="v">'+wk.cardio+'<span style="font-size:15px;color:var(--muted)">/7</span></div><div class="l">Cardio esta semana</div></div>'
+    +'<div class="tile"><div class="v">'+streakCardio()+'</div><div class="l">Racha de cardio (días)</div></div>'
     +'</div>';
-  if(todays.length){
-    h+='<h3>Registrado hoy</h3>';
-    for(const s of todays){
-      h+='<div class="card"><div class="row between"><div><b>'+esc(s.name)+'</b>'
-        +'<div class="sub">'+sessionSummary(s)+'</div></div><span class="done">✓</span></div></div>';
-    }
-  }
-  /* ---- Programa fijo del día (v1.3) ---- */
-  const di=(new Date().getDay()+6)%7;
-  const plan=WEEK_PLAN[di];
-  const low=!!S.lowReadiness[t];
-  h+='<h3>Programa de hoy — '+plan.d+'</h3><div class="card">';
-  if(!plan.items.length){
-    h+='<div style="font-size:17px;padding:6px 0"><b>🛑 Descanso total.</b></div>';
-  }else{
-    for(const it of plan.items){
-      const hecho = it.k==="r"
-        ? todays.some(s=>s.type==="fuerza" && s.routineId===it.id)
-        : todays.some(s=>s.type==="cardio" && s.cardio && s.cardio.kind===it.id);
-      const fn = it.k==="r" ? "startStrength" : "goCardio";
-      h+='<div class="setrow"><span style="flex:1">'+(hecho?"✓ ":"")+esc(it.label)+'</span>'
-        +(hecho? '<span class="done">listo</span>'
-               : '<button class="primary small" onclick="'+fn+'(\''+it.id+'\')">Empezar</button>')
-        +'</div>';
-    }
-  }
-  if(plan.nota) h+='<div class="safety" style="margin-top:8px">'+esc(plan.nota)+'</div>';
-  if(plan.items.some(x=>x.k==="r" && x.id!=="M")){
-    h+='<div style="margin-top:10px"><button class="'+(low?"danger":"ghost")+' small" onclick="toggleLowReadiness()">'
-      +(low? "🟠 Readiness baja ACTIVA — 1 serie menos por ejercicio (toca para quitar)"
-           : "🟠 Readiness baja")+'</button>'
-      +'<div class="d" style="font-size:13px;color:var(--muted);margin-top:6px">Recorta una serie por ejercicio en la fuerza. <b>Nunca toca el McGill.</b> Actívalo antes de empezar la sesión.</div></div>';
+
+  /* --- CARDIO --- */
+  h+='<h3>🏃 Cardio de la mañana</h3><div class="card">';
+  h+='<div class="seg" style="margin-bottom:6px">'
+    +segBtn("Hecho ✓", d.cardio.done===true, "setDayVal(\'cardio\',\'done\',true)")
+    +segBtn("No lo hice", d.cardio.done===false, "setDayVal(\'cardio\',\'done\',false)")
+    +'</div>';
+  if(d.cardio.done){
+    h+='<div class="grid3">'
+      +numF("Min","c_min",d.cardio.min)
+      +numF("FC prom","c_hrAvg",d.cardio.hrAvg)
+      +numF("FC máx","c_hrMax",d.cardio.hrMax)
+      +'</div><div class="grid3">'
+      +numF("Ciclos (de 3)","c_cycles",d.cardio.cycles)
+      +numF("Incl. máx %","c_incline",d.cardio.incline)
+      +numF("Millas","c_dist",d.cardio.dist)
+      +'</div>';
+    h+='<div class="checkitem '+(d.cardio.surge5?"on":"")+'" onclick="toggleDay(\'cardio\',\'surge5\')" style="margin-top:6px">'
+      +'<div class="box">'+(d.cardio.surge5?"✓":"")+'</div>'
+      +'<div class="t">Hice el burst de 5.0 mph<div class="d">Solo con espalda 🟢 y en el surge 3</div></div></div>';
+    if(d.cardio.hrAvg && (+d.cardio.hrAvg<110||+d.cardio.hrAvg>132))
+      h+='<div class="hint">⚠️ FC promedio '+esc(d.cardio.hrAvg)+': fuera de la ventana esperada (115–125 en bloques, algo más alta por los surges). '
+        +(+d.cardio.hrAvg<110? "Sube inclinación en los bloques." : "Baja inclinación o acorta los surges.")+'</div>';
   }
   h+='</div>';
-  h+='<h3>Checklist diario</h3><div class="card">';
-  for(const c of CHECKLIST){
-    const on=!!chk[c.id];
-    h+='<div class="checkitem '+(on?"on":"")+'" onclick="toggleCheck(\''+c.id+'\')">'
-      +'<div class="box">'+(on?"✓":"")+'</div>'
-      +'<div class="t">'+c.t+'<div class="d">'+c.d+'</div></div></div>';
+
+  /* --- FUERZA --- */
+  h+='<h3>🏋️ Fuerza</h3><div class="card">';
+  h+='<label class="f">Sesión de hoy'+(planR? ' — tocaba <b>'+planR+'</b>':'')+'</label><div class="seg">'
+    + ROUTINES.filter(r=>r.id!=="M").map(r=>segBtn(r.id, d.fuerza.routineId===r.id, "pickRoutine(\'"+r.id+"\')")).join("")
+    + segBtn("Ninguna", d.fuerza.routineId==="", "pickRoutine('')")
+    +'</div>';
+  h+='<div class="checkitem '+(isLow(iso)?"on":"")+'" onclick="toggleLowReadiness(\''+iso+'\')">'
+    +'<div class="box">'+(isLow(iso)?"✓":"")+'</div>'
+    +'<div class="t">🟠 Readiness baja<div class="d">1 serie menos por ejercicio (mínimo 2). El McGill nunca se recorta.</div></div></div>';
+  if(d.fuerza.routineId){
+    const r=routineById(d.fuerza.routineId);
+    h+='<div class="prev" style="margin-top:10px">'+esc(r.name)+' · '+esc(r.dur)+' — los pesos vienen precargados con lo previsto o con tu última sesión. Corrige solo lo que cambió.</div>';
+    for(const e of r.exercises){
+      const prescribed = prescribeFor(e);
+      const cur = d.fuerza.ex[e.id] || {};
+      const w = cur.w!=null? cur.w : prescribed.w;
+      const rp = cur.r!=null? cur.r : prescribed.r;
+      const st = cur.sets!=null? cur.sets : tgtSetsFor(e, d.fuerza.routineId, iso);
+      const last = lastPerf(e.id);
+      h+='<div class="exrow">'
+        +'<div class="row between"><div class="nm">'+(e.pair?'<span class="pairtag">'+e.pair+' </span>':'')+esc(e.name)+'</div>'
+        +'<span class="pill '+(e.block==="disoc"?"green":"")+'">'+targetLabel(e)+'</span></div>';
+      if(last) h+='<div class="pr">Anterior ('+fmtDate(last.date)+'): '+last.sets.map(x=>setLabel(e.mode,x)).join(" · ")+'</div>';
+      h+='<div class="in">';
+      if(e.mode==="hold"){
+        h+='<input type="number" inputmode="numeric" id="fx_'+e.id+'_s" value="'+(cur.s!=null?cur.s:e.secs)+'" onchange="setEx(\''+e.id+'\')"><span>seg</span>';
+      }else if(e.mode==="band"){
+        h+='<input type="text" id="fx_'+e.id+'_b" placeholder="banda" value="'+esc(cur.band||prescribed.band||"")+'" style="width:110px" onchange="setEx(\''+e.id+'\')"><span>×</span>'
+          +'<input type="number" inputmode="numeric" id="fx_'+e.id+'_r" value="'+rp+'" onchange="setEx(\''+e.id+'\')"><span>reps</span>';
+      }else if(e.mode==="bw"){
+        h+='<input type="number" inputmode="numeric" id="fx_'+e.id+'_r" value="'+rp+'" onchange="setEx(\''+e.id+'\')"><span>reps +</span>'
+          +'<input type="number" inputmode="decimal" id="fx_'+e.id+'_w" placeholder="lastre" value="'+(cur.w!=null?cur.w:"")+'" onchange="setEx(\''+e.id+'\')"><span>lb</span>';
+      }else{
+        h+='<input type="number" inputmode="decimal" id="fx_'+e.id+'_w" value="'+w+'" onchange="setEx(\''+e.id+'\')"><span>lb ×</span>'
+          +'<input type="number" inputmode="numeric" id="fx_'+e.id+'_r" value="'+rp+'" onchange="setEx(\''+e.id+'\')"><span>'+(e.mode==="carry"?"pasos":"reps")+'</span>';
+      }
+      h+='<input type="number" inputmode="numeric" id="fx_'+e.id+'_n" value="'+st+'" onchange="setEx(\''+e.id+'\')" style="width:56px"><span>series</span>';
+      h+='</div>';
+      const hint=progressionHint(e,last);
+      if(hint) h+='<div class="hint up" style="margin:6px 0 0">📈 '+esc(hint)+'</div>';
+      h+='</div>';
+    }
   }
   h+='</div>';
+
+  /* --- HÁBITOS --- */
+  h+='<h3>🥩 Hábitos</h3><div class="card">';
+  h+='<div class="grid3">'+numF("Proteína (g)","h_prot",d.habitos.prot)+numF("Pasos","h_pasos",d.habitos.pasos)+numF("Merengadas","h_shakes",d.habitos.shakes)+'</div>';
+  h+='<div class="checkitem '+(d.habitos.crea?"on":"")+'" onclick="toggleDay(\'habitos\',\'crea\')"><div class="box">'+(d.habitos.crea?"✓":"")+'</div><div class="t">Creatina 5 g<div class="d">Todos los días, también en descanso</div></div></div>';
+  h+='<div class="checkitem '+(d.habitos.mcgill?"on":"")+'" onclick="toggleDay(\'habitos\',\'mcgill\')"><div class="box">'+(d.habitos.mcgill?"✓":"")+'</div><div class="t">McGill Big 3 + movilidad<div class="d">8 min — el seguro de L2–S1</div></div></div>';
+  if(d.habitos.prot && +d.habitos.prot<180)
+    h+='<div class="hint">Faltan '+(180-(+d.habitos.prot))+' g para el piso de 180. Con incretina activa, la proteína no es suplemento: es lo que decide si la pérdida de peso sale de la grasa o del músculo.</div>';
+  h+='</div>';
+
+  /* --- SALUD --- */
+  h+='<h3>❤️ Salud del día</h3><div class="card">';
+  h+='<div class="grid2">'+numF("😴 Horas sueño","s_sleepH",d.salud.sleepH)+numF("Sleep score","s_sleepScore",d.salud.sleepScore)+'</div>';
+  h+='<div class="grid2">'+numF("HRV Oura","s_hrv",d.salud.hrv)+numF("RHR ⭐","s_rhr",d.salud.rhr)+'</div>';
+  h+='<label class="f">Espalda (L2–S1)</label><div class="seg tri">'
+    +segBtn("🟢 Sin síntomas", d.salud.espalda==="verde","setDayVal(\'salud\',\'espalda\',\'verde\')","g")
+    +segBtn("🟡 Rigidez", d.salud.espalda==="amarillo","setDayVal(\'salud\',\'espalda\',\'amarillo\')","y")
+    +segBtn("🔴 Irradiado", d.salud.espalda==="rojo","setDayVal(\'salud\',\'espalda\',\'rojo\')","r")
+    +'</div>';
+  if(d.salud.espalda==="rojo") h+='<div class="banner">🔴 Dolor irradiado a pierna izquierda = tu síntoma centinela. STOP golf, tenis y surges. Solo caminata plana y McGill hasta que ceda.</div>';
+  h+='<label class="f">Piel / eczema</label><div class="seg tri">'
+    +segBtn("Sin brote", d.salud.piel==="ok", "setDayVal(\'salud\',\'piel\',\'ok\')","g")
+    +segBtn("Brote", d.salud.piel==="brote", "setDayVal(\'salud\',\'piel\',\'brote\')","y")
+    +'</div>';
+  h+='</div>';
+
+  h+='<label class="f">Notas del día (craving, energía, contexto, molestias)</label>'
+    +'<textarea id="d_nota" onchange="getDay(CIERRE_DATE).nota=this.value;saveState()">'+esc(d.nota||"")+'</textarea>';
+
+  h+='<div class="row" style="margin:16px 0">'
+    +'<button class="primary" style="flex:2" onclick="saveCierre()">✅ Guardar cierre del día</button>'
+    +'<button style="flex:1" onclick="copyCierre()">📋 Copiar</button></div>';
+  h+='<div class="sub" id="expMsg" style="text-align:center;color:var(--good-text)"></div>';
+
+  /* Plan de la semana */
+  h+='<h3>📅 La semana</h3><div class="card">';
+  for(const w of WEEK_PLAN){
+    const isToday = w.d.toLowerCase().startsWith(["domingo","lunes","martes","miércoles","jueves","viernes","sábado"][dow].slice(0,4));
+    h+='<div class="row between" style="padding:6px 0;border-bottom:1px solid var(--grid)'+(isToday?';font-weight:700;color:var(--accent)':'')+'">'
+      +'<span>'+w.d+'</span><span style="font-size:14px;text-align:right">'+w.c+(w.f!=="—"? ' <span class="pill blue" style="margin-left:6px">'+w.f.split(" —")[0]+'</span>':'')+'</span></div>';
+  }
+  h+='<div class="safety" style="margin-top:8px">Si vuelve el fútbol del jueves: S2 se mueve a miércoles. Nunca fuerza pesada el mismo día que doble ronda de golf.</div></div>';
+
   h+='<div class="card"><b>Reglas de la casa</b>'
-    +'<div class="safety">❌ Sin carga axial (L2–S1) · ❌ Sin impacto/correr · ✅ Exhalar en el esfuerzo · ✅ La FC manda sobre el número en la app · 🛑 Dolor torácico, disnea desproporcionada o mareo → parar y consultar.</div></div>';
+    +'<div class="safety">❌ Sin carga axial (L2–S1) · ❌ Sin impacto salvo el burst autorizado · ✅ Exhalar en el esfuerzo, nunca Valsalva (CAC 385.9) · ✅ 1–2 reps en reserva, nunca al fallo · ✅ La FC manda sobre el número en la app · 🛑 Dolor torácico, disnea desproporcionada o mareo → parar y consultar.</div></div>';
   return h;
 }
-function toggleLowReadiness(){
-  const t=todayISO();
-  S.lowReadiness=S.lowReadiness||{};
-  if(S.lowReadiness[t]) delete S.lowReadiness[t]; else S.lowReadiness[t]=true;
-  saveState(); render();
+function segBtn(label,on,onclick,cls){
+  return '<button class="'+(on?"on "+(cls||""):"")+'" onclick="'+onclick+'">'+label+'</button>';
 }
-function goCardio(kind){ TAB="entrenar"; setActiveTab(); openCardio(kind); }
-function toggleCheck(id){
-  const t=todayISO();
-  S.checklist[t]=S.checklist[t]||{};
-  S.checklist[t][id]=!S.checklist[t][id];
-  saveState(); render();
+function numF(label,id,val){
+  return '<div><label class="f">'+label+'</label><input type="number" inputmode="decimal" id="'+id+'" value="'+(val==null?"":val)+'" onchange="syncFields()"></div>';
 }
-function sessionSummary(s){
-  if(s.type==="cardio"){
-    const c=s.cardio, ct=CARDIO_TYPES.find(x=>x.id===c.kind);
-    let parts=[];
-    if(c.min) parts.push(c.min+" min");
-    if(c.hrAvg) parts.push("FC "+c.hrAvg);
-    if(c.hrMax) parts.push("máx "+c.hrMax);
-    if(c.incline) parts.push(c.incline+"%");
-    if(c.kcal) parts.push(c.kcal+" kcal");
-    return parts.join(" · ")||"—";
+function setDayVal(sec,key,val){ const d=getDay(CIERRE_DATE); syncFields(); d[sec][key]=val; saveState(); render(); }
+function toggleDay(sec,key){ const d=getDay(CIERRE_DATE); syncFields(); d[sec][key]=!d[sec][key]; saveState(); render(); }
+function pickRoutine(id){ const d=getDay(CIERRE_DATE); syncFields(); d.fuerza.routineId=id; saveState(); render(); }
+function gv(id){ const el=document.getElementById(id); if(!el) return undefined; const v=el.value.trim(); return v===""? "" : (isNaN(parseFloat(v))? v : parseFloat(v)); }
+function syncFields(){
+  const d=getDay(CIERRE_DATE);
+  const map={c_min:["cardio","min"],c_hrAvg:["cardio","hrAvg"],c_hrMax:["cardio","hrMax"],c_cycles:["cardio","cycles"],
+    c_incline:["cardio","incline"],c_dist:["cardio","dist"],
+    h_prot:["habitos","prot"],h_pasos:["habitos","pasos"],h_shakes:["habitos","shakes"],
+    s_sleepH:["salud","sleepH"],
+    s_sleepScore:["salud","sleepScore"],s_hrv:["salud","hrv"],s_rhr:["salud","rhr"]};
+  for(const id in map){ const v=gv(id); if(v!==undefined) d[map[id][0]][map[id][1]]=v; }
+  const nt=document.getElementById("d_nota"); if(nt) d.nota=nt.value;
+  if(d.fuerza.routineId){
+    const r=routineById(d.fuerza.routineId);
+    if(r) for(const e of r.exercises) readEx(e,d);
   }
-  const nEx=(s.exercises||[]).filter(e=>e.sets.length).length;
-  const nSets=(s.exercises||[]).reduce((a,e)=>a+e.sets.length,0);
-  return nEx+" ejercicios · "+nSets+" series";
+  saveState();
 }
+function readEx(e,d){
+  const g=k=>{ const el=document.getElementById("fx_"+e.id+"_"+k); return el? el.value.trim():null; };
+  const o=d.fuerza.ex[e.id]||{};
+  const w=g("w"), r=g("r"), s=g("s"), b=g("b"), n=g("n");
+  if(w!==null) o.w = w===""? null : parseFloat(w);
+  if(r!==null && r!=="") o.r=parseFloat(r);
+  if(s!==null && s!=="") o.s=parseFloat(s);
+  if(b!==null) o.band=b;
+  if(n!==null && n!=="") o.sets=parseInt(n);
+  d.fuerza.ex[e.id]=o;
+}
+function setEx(exId){ syncFields(); }
+/* Prescripción: última sesión si existe, si no el arranque del plan */
+function prescribeFor(e){
+  const last=lastPerf(e.id);
+  if(last && last.sets.length){
+    const best=last.sets.reduce((a,b)=> (b.w||0)>(a.w||0)? b:a, last.sets[0]);
+    return {w: best.w!=null? best.w : (e.startW||""), r: best.r!=null? best.r : (e.reps? e.reps[0]:""), band: best.band||""};
+  }
+  return {w: e.startW||"", r: e.reps? e.reps[0] : "", band:""};
+}
+function targetLabel(e){
+  if(e.mode==="hold") return e.sets+" × "+e.secs+" s"+(e.perSide?" c/lado":"");
+  const r=e.reps? (e.reps[0]===e.reps[1]? e.reps[0] : e.reps[0]+"–"+e.reps[1]) : "";
+  if(e.mode==="carry") return e.sets+" × "+r+" pasos c/lado";
+  return e.sets+" × "+r+(e.perSide?" c/lado":"");
+}
+
+/* Guardar cierre → escribe S.days y regenera las sesiones del día */
+function saveCierre(){
+  syncFields();
+  const iso=CIERRE_DATE, d=getDay(iso);
+  d.saved=true;
+  /* limpia sesiones previas generadas por el cierre de ese día */
+  S.sessions=S.sessions.filter(s=>!(s.date===iso && s.src==="cierre"));
+  if(d.cardio.done){
+    S.sessions.push({id:uid(), date:iso, type:"cardio", src:"cierre", name:"Cardio Trabajo — intervalos",
+      cardio:{kind:"trabajo", min:d.cardio.min||null, hrAvg:d.cardio.hrAvg||null, hrMax:d.cardio.hrMax||null,
+        incline:d.cardio.incline||null, dist:d.cardio.dist||null,
+        note:(d.cardio.cycles? d.cardio.cycles+" ciclos":"")+(d.cardio.surge5? " · burst 5.0 mph":"")}});
+  }
+  if(d.fuerza.routineId){
+    const r=routineById(d.fuerza.routineId);
+    const exs=[];
+    for(const e of r.exercises){
+      const o=d.fuerza.ex[e.id]; if(!o) continue;
+      const n=o.sets||e.sets; const sets=[];
+      for(let i=0;i<n;i++){
+        if(e.mode==="hold"){ if(o.s) sets.push({s:o.s, band:o.band||undefined}); }
+        else if(e.mode==="band"){ if(o.r) sets.push({band:o.band||"banda", r:o.r}); }
+        else if(e.mode==="bw"){ if(o.r) sets.push(o.w? {r:o.r,w:o.w} : {r:o.r}); }
+        else { if(o.r && o.w!=null) sets.push({w:o.w, r:o.r}); }
+      }
+      if(sets.length) exs.push({exId:e.id, name:e.name, mode:e.mode, sets});
+    }
+    if(exs.length) S.sessions.push({id:uid(), date:iso, type:"fuerza", src:"cierre",
+      routineId:r.id, name:r.name, exercises:exs, note:d.nota||""});
+  }
+  /* checklist legacy, para no romper exportaciones viejas */
+  S.checklist[iso]=S.checklist[iso]||{};
+  S.checklist[iso].sesion = !!(d.cardio.done || d.fuerza.routineId);
+  S.checklist[iso].mcgill = !!d.habitos.mcgill;
+  S.checklist[iso].crea = !!d.habitos.crea;
+  S.checklist[iso].prot = (+d.habitos.prot)>=180;
+  S.checklist[iso].prot1 = (+d.habitos.shakes)>=1;
+  S.checklist[iso].prot2 = (+d.habitos.shakes)>=2;
+  S.checklist[iso].pasos = (+d.habitos.pasos)>=8000;
+  saveState();
+  const m=document.getElementById("expMsg");
+  render();
+  const m2=document.getElementById("expMsg"); if(m2){ m2.textContent="Cierre guardado ✓"; setTimeout(()=>{const x=document.getElementById("expMsg"); if(x) x.textContent="";},4000); }
+}
+function cierreText(iso){
+  const d=getDay(iso);
+  let o="CIERRE — "+iso+"\n";
+  o+="Cardio: "+(d.cardio.done? ((d.cardio.min||"?")+" min · FC "+(d.cardio.hrAvg||"?")+" prom / "+(d.cardio.hrMax||"?")+" máx · "
+      +(d.cardio.cycles||"?")+" ciclos · incl máx "+(d.cardio.incline||"?")+"%"+(d.cardio.surge5?" · burst 5.0 mph":"")) : "no")+"\n";
+  if(d.fuerza.routineId){
+    const r=routineById(d.fuerza.routineId);
+    o+="Fuerza: "+r.name+"\n";
+    for(const e of r.exercises){
+      const x=d.fuerza.ex[e.id]; if(!x) continue;
+      let v="";
+      if(e.mode==="hold") v=(x.s||"?")+" s";
+      else if(e.mode==="band") v=(x.band||"banda")+" × "+(x.r||"?");
+      else if(e.mode==="bw") v=(x.r||"?")+" reps"+(x.w?" +"+x.w+" lb":"");
+      else v=(x.w!=null?x.w:"?")+" lb × "+(x.r||"?");
+      o+="  - "+e.name.replace(/[🏌️🎾⭐]/g,"").trim()+": "+(x.sets||e.sets)+" × "+v+"\n";
+    }
+  } else o+="Fuerza: no\n";
+  o+="Hábitos: proteína "+(d.habitos.prot||"?")+" g · "+(d.habitos.shakes||0)+" merengadas · pasos "+(d.habitos.pasos||"?")
+    +" · creatina "+(d.habitos.crea?"sí":"no")+" · McGill "+(d.habitos.mcgill?"sí":"no")+"\n";
+  o+="Salud: sueño "+(d.salud.sleepH||"?")+" h (score "+(d.salud.sleepScore||"?")+") · HRV "+(d.salud.hrv||"?")
+    +" · RHR "+(d.salud.rhr||"?")+" · espalda "+(d.salud.espalda||"?")+" · piel "+(d.salud.piel||"?")+"\n";
+  if(d.nota) o+="Notas: "+d.nota+"\n";
+  return o;
+}
+function copyCierre(){ syncFields(); copyOrDownload(cierreText(CIERRE_DATE), "cierre.txt", "Cierre copiado ✓"); }
 </script>
 <script>
 /* ---------- VISTA: ENTRENAR ---------- */
 function viewEntrenar(){
   if(S.active) return viewActiveSession();
-  let h='<h2>Entrenar</h2><h3>Fuerza</h3>';
+  let h='<h2>Entrenar</h2>';
+  h+='<div class="card tap" onclick="SUB=\'guion\';Guion.reset();render()" style="border-color:var(--s2)">'
+    +'<div class="row between"><b>🏃 Cardio Trabajo — guion 45 min</b><span class="pill orange">6 am · ayunas</span></div>'
+    +'<div class="sub">3 ciclos: 9 min a 2.2–2.4 mph con 12–13% (iPad arriba) + surge de 90 s. La app te canta cada cambio de velocidad e inclinación.</div></div>';
+  h+='<h3>Fuerza — pesado y corto</h3>';
   for(const r of ROUTINES){
-    const tag = r.id==="M"? "diario" : (r.id==="G"? "golf" : "fuerza");
+    const isM = r.id==="M";
     h+='<div class="card tap" onclick="startStrength(\''+r.id+'\')">'
-      +'<div class="row between"><b>'+esc(r.name)+'</b><span class="pill '+(tag==="fuerza"?"blue":"orange")+'">'+tag+'</span></div>'
+      +'<div class="row between"><b>'+esc(r.name)+'</b><span class="pill '+(isM?"orange":"blue")+'">'+esc(r.day)+' · '+esc(r.dur)+'</span></div>'
       +'<div class="sub">'+r.exercises.map(e=>e.name.replace(" ⭐","")).join(" · ")+'</div></div>';
   }
-  h+='<h3>Cardio</h3>';
+  h+='<h3>Otros registros de cardio</h3>';
   for(const c of CARDIO_TYPES){
+    if(c.id==="trabajo") continue;
     h+='<div class="card tap" onclick="openCardio(\''+c.id+'\')">'
       +'<div class="row between"><b>'+esc(c.name)+'</b><span class="pill orange">cardio</span></div>'
       +(c.target?'<div class="sub">'+esc(c.target)+'</div>':"")+'</div>';
   }
   return h;
 }
+
+/* ---------- GUION DE INTERVALOS ---------- */
+const Guion = {
+  i:0, left:0, running:false, int:null, startTs:0,
+  reset(){ this.i=0; this.left=INTERVAL_PLAN[0].sec; this.running=false; clearInterval(this.int); this.int=null; },
+  toggle(){
+    if(this.running){ this.running=false; clearInterval(this.int); this.int=null; }
+    else{
+      this.running=true;
+      if(!this.startTs) this.startTs=Date.now();
+      this.int=setInterval(()=>{
+        this.left--;
+        if(this.left<=0){ this.next(true); }
+        else if(this.left<=3) beep(660);
+        this.paint();
+      },1000);
+    }
+    this.paint();
+  },
+  next(auto){
+    if(this.i>=INTERVAL_PLAN.length-1){
+      this.running=false; clearInterval(this.int); this.int=null;
+      this.i=INTERVAL_PLAN.length-1; this.left=0; buzz(); beep(990);
+      this.paint(); return;
+    }
+    this.i++; this.left=INTERVAL_PLAN[this.i].sec;
+    if(auto){ buzz(); beep(INTERVAL_PLAN[this.i].work? 880 : 1180); }
+    this.paint();
+  },
+  prev(){ if(this.i>0){ this.i--; this.left=INTERVAL_PLAN[this.i].sec; this.paint(); } },
+  elapsed(){ let e=0; for(let k=0;k<this.i;k++) e+=INTERVAL_PLAN[k].sec; return e+(INTERVAL_PLAN[this.i].sec-this.left); },
+  paint(){
+    const p=INTERVAL_PLAN[this.i];
+    const big=document.getElementById("gBig"); if(!big) return;
+    big.className="phasebig"+(p.work?"":" surge");
+    document.getElementById("gT").textContent=p.t;
+    document.getElementById("gC").textContent=mmss(this.left);
+    document.getElementById("gSpd").textContent=p.spd;
+    document.getElementById("gInc").textContent=p.inc;
+    document.getElementById("gHr").textContent=p.hr;
+    document.getElementById("gNote").textContent=p.note||"";
+    document.getElementById("gPlay").textContent=this.running? "⏸ Pausa" : (this.elapsed()>0? "▶︎ Seguir":"▶︎ Empezar");
+    document.getElementById("gElap").textContent=mmss(this.elapsed())+" / "+mmss(INTERVAL_TOTAL);
+    document.getElementById("gBar").style.width=Math.min(100,100*this.elapsed()/INTERVAL_TOTAL)+"%";
+    document.querySelectorAll("#gList .p").forEach((el,k)=>{
+      el.classList.toggle("now",k===this.i);
+      el.classList.toggle("past",k<this.i);
+    });
+  }
+};
+function viewGuion(){
+  let h='<div class="row between"><h2 style="margin:14px 0 4px">Cardio Trabajo</h2>'
+    +'<button class="small ghost" onclick="SUB=null;Guion.reset();render()">← Salir</button></div>';
+  h+='<div class="sub" style="color:var(--muted);font-size:14px">45 min · 6 am en ayunas · MyRun. Los bloques largos van a ≤2.4 mph: ahí trabajas. Los surges son 90 s: ahí no.</div>';
+  h+='<div class="phasebig" id="gBig">'
+    +'<div class="ph-t" id="gT">—</div>'
+    +'<div class="ph-c" id="gC">0:00</div>'
+    +'<div class="ph-set">'
+      +'<div>mph<b id="gSpd">—</b></div>'
+      +'<div>incl. %<b id="gInc">—</b></div>'
+      +'<div>FC<b id="gHr">—</b></div>'
+    +'</div>'
+    +'<div class="safety" id="gNote" style="margin-top:10px"></div>'
+    +'</div>';
+  h+='<div class="progbar"><i id="gBar" style="width:0%"></i></div>'
+    +'<div class="row between"><span class="sub" style="color:var(--muted);font-size:13px" id="gElap">0:00</span>'
+    +'<span class="sub" style="color:var(--muted);font-size:13px">'+INTERVAL_PLAN.length+' fases</span></div>';
+  h+='<div class="row" style="margin:12px 0">'
+    +'<button style="flex:1" onclick="Guion.prev()">◀︎</button>'
+    +'<button class="primary" style="flex:3" id="gPlay" onclick="Guion.toggle()">▶︎ Empezar</button>'
+    +'<button style="flex:1" onclick="Guion.next(false)">▶︎▶︎</button></div>';
+  h+='<div class="card phaselist" id="gList">';
+  INTERVAL_PLAN.forEach((p,k)=>{
+    h+='<div class="p"><span>'+esc(p.t)+'</span><span class="m">'+p.spd+' mph · '+p.inc+'% · '+mmss(p.sec)+'</span></div>';
+  });
+  h+='</div>';
+  h+='<div class="card"><b>Progresión (la inclinación sube, la velocidad no)</b><div class="safety" style="margin-top:6px">'
+    + CARDIO_LADDER.map(x=>"• "+esc(x)).join("<br>")+'</div></div>';
+  h+='<div class="banner">Al terminar, no registres aquí: el cardio se anota una sola vez en el <b>Cierre del día</b>.</div>';
+  return h;
+}
+
+/* ---------- Sesión de fuerza en vivo (opcional) ---------- */
 function startStrength(rid){
-  const r=ROUTINES.find(x=>x.id===rid);
-  const low = !!(S.lowReadiness&&S.lowReadiness[todayISO()]) && rid!=="M";
+  const r=routineById(rid);
+  const low = isLow() && rid!=="M";
   S.active={ id:uid(), date:todayISO(), type:"fuerza", routineId:rid, name:r.name,
     startTs:Date.now(), note:"", low:low,
     exercises:r.exercises.map(e=>({exId:e.id, name:e.name, mode:e.mode, sets:[]})) };
-  saveState(); TAB="entrenar"; render();
-}
-/* Series objetivo de hoy: Readiness baja recorta 1 serie (mínimo 2). Nunca en McGill. */
-function tgtSets(exDef){
-  const a=S.active;
-  if(a && a.low && a.routineId!=="M") return Math.max(2, exDef.sets-1);
-  return exDef.sets;
+  saveState(); TAB="entrenar"; SUB=null; render();
 }
 function viewActiveSession(){
   const a=S.active;
-  const r=ROUTINES.find(x=>x.id===a.routineId);
+  const r=routineById(a.routineId);
+  /* Sesión activa creada por una versión anterior de la app: la rutina pudo
+     cambiar de ejercicios. Reconciliamos por exId para no romper nada. */
+  if(!r){
+    return '<div class="card"><b>Sesión antigua</b><div class="sub">Esta sesión venía de una versión anterior con una rutina que ya no existe. Puedes guardarla como está o descartarla.</div>'
+      +'<div class="row" style="margin-top:12px"><button class="primary" style="flex:2" onclick="finishSession()">Guardar</button>'
+      +'<button class="danger" style="flex:1" onclick="discardSession()">Descartar</button></div></div>';
+  }
+  a.exercises = r.exercises.map(e=>{
+    const prev=(a.exercises||[]).find(x=>x.exId===e.id);
+    return prev? {exId:e.id, name:e.name, mode:e.mode, sets:prev.sets||[]}
+               : {exId:e.id, name:e.name, mode:e.mode, sets:[]};
+  });
   const mins=Math.round((Date.now()-a.startTs)/60000);
   let h='<div class="sessionhead"><h2 style="margin:0">'+esc(a.name)+'</h2>'
     +'<span class="pill">'+mins+' min</span></div>';
-  if(r && r.note) h+='<div class="banner">'+esc(r.note)+'</div>';
   if(a.low) h+='<div class="banner">🟠 Readiness baja: 1 serie menos por ejercicio. El McGill nunca se recorta.</div>';
+  if(r && r.note) h+='<div class="banner">'+esc(r.note)+'</div>';
+  let lastBlock=null;
   r.exercises.forEach((exDef,i)=>{
+    if(exDef.block==="disoc" && lastBlock!=="disoc"){
+      h+='<h3 style="color:var(--s3)">🔄 Bloque de disociación — cadera / hombros</h3>'
+        +'<div class="sub" style="color:var(--muted);font-size:13.5px;margin-bottom:4px">Golf y tenis viven aquí. La cadera gira, la columna transmite. Nunca al revés.</div>';
+    }
+    lastBlock=exDef.block;
     const ex=a.exercises[i];
     const last=lastPerf(exDef.id, a.id);
     const hint=progressionHint(exDef,last);
-    const NS=tgtSets(exDef);
-    const done=ex.sets.length>=NS;
+    const done=ex.sets.length>=tgtSets(exDef);
     h+='<div class="card '+(done?"exdone":"")+'">';
-    h+='<div class="row between"><b>'+esc(exDef.name)+'</b>'
-      +'<span class="pill">'+targetLabel(exDef)+'</span></div>';
+    h+='<div class="row between"><b>'+(exDef.pair?'<span class="pairtag">'+exDef.pair+' </span>':'')+esc(exDef.name)+'</b>'
+      +'<span class="pill">'+targetLabel(exDef)+(exDef.startW?(" · "+exDef.startW+" lb"):"")+'</span></div>';
     if(exDef.tip) h+='<div class="safety">'+esc(exDef.tip)+'</div>';
     if(last) h+='<div class="prev">La vez pasada ('+fmtDate(last.date)+'): '
       + last.sets.map(s=>setLabel(exDef.mode,s)).join(" · ")+'</div>';
     if(hint) h+='<div class="hint up">📈 '+esc(hint)+'</div>';
-    /* series confirmadas (con delta vs sesión anterior) */
     for(let si=0; si<ex.sets.length; si++){
       h+='<div class="setrow"><span class="n">'+(si+1)+'</span>'
         +'<span style="flex:1">'+setLabel(exDef.mode,ex.sets[si])+deltaBadge(exDef,ex.sets[si],last,si)+'</span>'
         +'<span class="done" style="margin-right:4px">✓</span>'
         +'<button class="small ghost" onclick="delSet('+i+','+si+')">✕</button></div>';
     }
-    /* filas pendientes precargadas — un tap para confirmar */
-    for(let si=ex.sets.length; si<NS; si++){
-      h+=inputRowPre(exDef,i,si,ex,last);
-    }
-    if(ex.sets.length>=NS)
+    for(let si=ex.sets.length; si<tgtSets(exDef); si++) h+=inputRowPre(exDef,i,si,ex,last);
+    if(ex.sets.length>=tgtSets(exDef))
       h+='<div style="margin-top:6px"><button class="small ghost" onclick="addExtraRow('+i+')">＋ serie extra</button></div>';
     if(a.extraRows && a.extraRows[i]>0){
-      for(let k=0;k<a.extraRows[i];k++) h+=inputRowPre(exDef,i,NS+k,ex,last);
+      for(let k=0;k<a.extraRows[i];k++) h+=inputRowPre(exDef,i,tgtSets(exDef)+k,ex,last);
     }
     h+='</div>';
   });
-  h+='<label class="f">Notas de la sesión (craving, FC, molestias, energía…)</label>'
+  h+='<label class="f">Notas de la sesión</label>'
     +'<textarea id="sessNote" oninput="S.active.note=this.value">'+esc(a.note||"")+'</textarea>';
   h+='<div class="row" style="margin:16px 0">'
     +'<button class="primary" style="flex:2" onclick="finishSession()">✅ Terminar y guardar</button>'
     +'<button class="danger" style="flex:1" onclick="discardSession()">Descartar</button></div>';
   return h;
 }
-function targetLabel(e){
-  if(e.pyramid) return e.pyramid.join("-")+" reps · hold "+(e.holdSec-2)+"–"+e.holdSec+" s"+(e.perSide?" c/lado":"");
-  if(e.mode==="hold") return e.sets+" × "+e.secs+" s"+(e.perSide?" c/lado":"");
-  const r=e.reps? (e.reps[0]===e.reps[1]? e.reps[0] : e.reps[0]+"–"+e.reps[1]) : "";
-  if(e.mode==="carry") return e.sets+" × "+r+" pasos c/lado";
-  return e.sets+" × "+r+(e.perSide?" c/lado":"")+(e.startW?(" · "+e.startW+" lb"):"");
-}
-/* Comparativo vs la misma serie de la sesión anterior */
 function deltaBadge(exDef,st,last,si){
   if(!last) return "";
   const prev = last.sets[si] || last.sets[last.sets.length-1];
@@ -691,14 +1056,11 @@ function deltaBadge(exDef,st,last,si){
   if(d==null || d===0) return "";
   return d>0? '<span class="delta up">▲+'+d+unit+'</span>' : '<span class="delta dn">▼'+d+unit+'</span>';
 }
-/* Fila precargada: los valores ya están puestos — solo confirmas con ✓ */
 function inputRowPre(exDef,i,si,ex,last){
-  const prevSet = ex.sets.length? ex.sets[ex.sets.length-1] : null; /* lo confirmado hoy manda */
+  const prevSet = ex.sets.length? ex.sets[ex.sets.length-1] : null;
   const lastAt = last? (last.sets[si] || last.sets[last.sets.length-1]) : null;
   const suggW = (prevSet&&prevSet.w!=null)? prevSet.w : (lastAt&&lastAt.w!=null? lastAt.w : exDef.startW||"");
-  let suggR = (lastAt&&lastAt.r!=null)? lastAt.r : (prevSet&&prevSet.r!=null? prevSet.r : (exDef.reps? exDef.reps[1] : ""));
-  /* La pirámide manda: cada escalón tiene su número de reps fijo */
-  if(exDef.pyramid) suggR = exDef.pyramid[si]!=null? exDef.pyramid[si] : exDef.pyramid[exDef.pyramid.length-1];
+  const suggR = (lastAt&&lastAt.r!=null)? lastAt.r : (prevSet&&prevSet.r!=null? prevSet.r : (exDef.reps? exDef.reps[0] : ""));
   const suggS = (lastAt&&lastAt.s!=null)? lastAt.s : (prevSet&&prevSet.s!=null? prevSet.s : exDef.secs||30);
   const suggB = (prevSet&&prevSet.band)? prevSet.band : (lastAt&&lastAt.band? lastAt.band : "");
   const k=i+"_"+si;
@@ -708,10 +1070,9 @@ function inputRowPre(exDef,i,si,ex,last){
       +'<span class="x">×</span>'
       +'<input type="number" inputmode="numeric" id="r'+k+'" placeholder="'+(exDef.mode==="carry"?"pasos":"reps")+'" value="'+suggR+'">';
   }else if(exDef.mode==="bw"){
-    fields='<input type="number" inputmode="numeric" id="r'+k+'" placeholder="reps" value="'+suggR+'">';
-    if(exDef.noLoad) fields+='<span class="x">reps × '+exDef.holdSec+' s</span>';
-    else fields+='<span class="x">+</span>'
-      +'<input type="number" inputmode="decimal" id="w'+k+'" placeholder="lastre" value="'+(suggW&&lastAt&&lastAt.w?lastAt.w:"")+'">';
+    fields='<input type="number" inputmode="numeric" id="r'+k+'" placeholder="reps" value="'+suggR+'">'
+      +'<span class="x">+</span>'
+      +'<input type="number" inputmode="decimal" id="w'+k+'" placeholder="lastre" value="'+(lastAt&&lastAt.w?lastAt.w:"")+'">';
   }else if(exDef.mode==="band"){
     fields='<input type="text" id="b'+k+'" placeholder="banda (color/tensión)" style="width:150px" value="'+esc(suggB)+'">'
       +'<span class="x">×</span>'
@@ -727,7 +1088,7 @@ function inputRowPre(exDef,i,si,ex,last){
 function num(id){ const el=document.getElementById(id); if(!el) return null; const v=parseFloat(el.value); return isNaN(v)?null:v; }
 function txt(id){ const el=document.getElementById(id); return el? el.value.trim():""; }
 function logSetRow(i,si){
-  const a=S.active; const exDef=ROUTINES.find(r=>r.id===a.routineId).exercises[i];
+  const a=S.active; const exDef=routineById(a.routineId).exercises[i];
   const k=i+"_"+si;
   const st={};
   if(exDef.mode==="hold"){ st.s=num("s"+k); const b=txt("b"+k); if(b) st.band=b; if(!st.s) return; }
@@ -740,9 +1101,7 @@ function logSetRow(i,si){
   }
   a.exercises[i].sets.push(st);
   if(a.exercises[i].sets.length>tgtSets(exDef) && a.extraRows && a.extraRows[i]>0) a.extraRows[i]--;
-  saveState();
-  Timer.start();
-  render();
+  saveState(); Timer.start(); render();
 }
 function addExtraRow(i){
   S.active.extraRows=S.active.extraRows||{};
@@ -755,32 +1114,37 @@ function finishSession(){
   a.exercises=a.exercises.filter(e=>e.sets.length);
   if(!a.exercises.length){ discardSession(); return; }
   a.durMin=Math.round((Date.now()-a.startTs)/60000);
-  S.sessions.push(a); S.active=null;
-  const t=todayISO(); S.checklist[t]=S.checklist[t]||{};
-  S.checklist[t].sesion=true;
-  if(a.routineId==="M") S.checklist[t].mcgill=true;
-  saveState(); Timer.stop(); TAB="hoy"; render();
+  S.sessions.push(a);
+  /* refleja la sesión en el cierre del día para no duplicar trabajo */
+  const dd=getDay(a.date);
+  if(a.routineId!=="M"){
+    dd.fuerza.routineId=a.routineId;
+    for(const ex of a.exercises){
+      const best=ex.sets.reduce((x,y)=> (y.w||y.r||0)>(x.w||x.r||0)? y:x, ex.sets[0]);
+      dd.fuerza.ex[ex.exId]={w:best.w!=null?best.w:null, r:best.r||null, s:best.s||null, band:best.band||"", sets:ex.sets.length};
+    }
+  } else dd.habitos.mcgill=true;
+  S.active=null;
+  saveState(); Timer.stop(); TAB="cierre"; SUB=null; render();
 }
 function discardSession(){
   if(!confirm("¿Descartar la sesión sin guardar?")) return;
   S.active=null; saveState(); Timer.stop(); render();
 }
 
-/* ---------- Cardio ---------- */
+/* ---------- Cardio manual ---------- */
 let cardioKind=null;
-function openCardio(kind){
-  cardioKind=kind;
-  const c=CARDIO_TYPES.find(x=>x.id===kind);
+function openCardio(kind){ cardioKind=kind; SUB="cardio"; render(); }
+function viewCardioForm(){
+  const c=CARDIO_TYPES.find(x=>x.id===cardioKind);
   let h='<h2>'+esc(c.name)+'</h2>';
   if(c.target) h+='<div class="banner">🎯 '+esc(c.target)+'</div>';
-  if(kind==="zona2") h+='<div class="safety">Puedes hablar con esfuerzo = en zona. Si puedes cantar, sube inclinación; si no puedes hablar, baja. NO es Zona 2 si la FC no está en 115–125.</div>';
-  /* precarga con la última sesión del mismo tipo — solo corrige lo que cambió */
   let lastC=null;
   for(let i=S.sessions.length-1;i>=0;i--){
     const s=S.sessions[i];
-    if(s.type==="cardio"&&s.cardio.kind===kind){ lastC=s.cardio; break; }
+    if(s.type==="cardio"&&s.cardio.kind===cardioKind){ lastC=s.cardio; break; }
   }
-  if(lastC) h+='<div class="prev">⚡ Precargado con tu última sesión — solo corrige lo que cambió y guarda.</div>';
+  if(lastC) h+='<div class="prev">⚡ Precargado con tu última sesión — corrige lo que cambió y guarda.</div>';
   h+='<div class="card"><div class="grid2">';
   for(const f of c.fields){
     const pv=(lastC&&lastC[f]!=null)? lastC[f] : "";
@@ -788,12 +1152,11 @@ function openCardio(kind){
       +'<input type="number" inputmode="decimal" id="cf_'+f+'" value="'+pv+'"></div>';
   }
   h+='</div><label class="f">Fecha</label><input type="date" id="cf_date" value="'+todayISO()+'">'
-    +'<label class="f">Notas</label><textarea id="cf_note" placeholder="'+(kind==="golf"?"¿Ultra Zero 0.0? ¿Cuántas cervezas reales?":"")+'"></textarea></div>';
+    +'<label class="f">Notas</label><textarea id="cf_note"></textarea></div>';
   h+='<div class="row" style="margin:16px 0">'
-    +'<button class="primary" style="flex:2" onclick="saveCardio()">✅ Guardar sesión</button>'
-    +'<button style="flex:1" onclick="TAB=\'entrenar\';render()">Cancelar</button></div>';
-  document.getElementById("view").innerHTML=h;
-  window.scrollTo(0,0);
+    +'<button class="primary" style="flex:2" onclick="saveCardio()">✅ Guardar</button>'
+    +'<button style="flex:1" onclick="SUB=null;render()">Cancelar</button></div>';
+  return h;
 }
 function saveCardio(){
   const c=CARDIO_TYPES.find(x=>x.id===cardioKind);
@@ -803,39 +1166,56 @@ function saveCardio(){
   if(!any){ alert("Registra al menos un dato (duración, FC…)"); return; }
   const date=txt("cf_date")||todayISO();
   S.sessions.push({id:uid(), date, type:"cardio", name:c.name, cardio:data});
-  if(date===todayISO()){ S.checklist[date]=S.checklist[date]||{}; S.checklist[date].sesion=true; }
-  if(cardioKind==="zona2" && data.hrAvg && (data.hrAvg<115||data.hrAvg>125)){
-    alert("FC promedio "+data.hrAvg+" está fuera de la ventana 115–125. Guardada igual — ajusta velocidad/inclinación la próxima.");
-  }
-  saveState(); TAB="hoy"; render();
+  saveState(); TAB="cierre"; SUB=null; CIERRE_DATE=date; render();
 }
 </script>
 <script>
 /* ---------- VISTA: HISTORIAL ---------- */
+function sessionSummary(s){
+  if(s.type==="cardio"){
+    const c=s.cardio; let parts=[];
+    if(c.min) parts.push(c.min+" min");
+    if(c.hrAvg) parts.push("FC "+c.hrAvg);
+    if(c.hrMax) parts.push("máx "+c.hrMax);
+    if(c.incline) parts.push(c.incline+"%");
+    if(c.kcal) parts.push(c.kcal+" kcal");
+    return parts.join(" · ")||"—";
+  }
+  const nEx=(s.exercises||[]).filter(e=>e.sets.length).length;
+  const nSets=(s.exercises||[]).reduce((a,e)=>a+e.sets.length,0);
+  return nEx+" ejercicios · "+nSets+" series";
+}
 function viewHistorial(){
-  if(!S.sessions.length) return '<h2>Historial</h2><div class="card">Aún no hay sesiones. Arranca en la pestaña Entrenar. 💪</div>';
-  const sorted=[...S.sessions].sort((a,b)=> a.date===b.date? 0 : (a.date<b.date?1:-1));
+  const dates=[...new Set([...S.sessions.map(s=>s.date), ...Object.keys(S.days).filter(k=>S.days[k].saved)])].sort().reverse();
+  if(!dates.length) return '<h2>Historial</h2><div class="card">Aún no hay días cerrados. Empieza en la pestaña Cierre. 💪</div>';
   let h='<h2>Historial</h2>';
-  let curDate="";
-  for(const s of sorted){
-    if(s.date!==curDate){ curDate=s.date; h+='<h3>'+fmtDate(s.date)+'</h3>'; }
-    h+='<div class="card"><div class="row between"><b>'+esc(s.name)+'</b>'
-      +'<span class="pill '+(s.type==="fuerza"?"blue":"orange")+'">'+(s.type==="fuerza"?"fuerza":"cardio")+'</span></div>'
-      +'<div class="sub">'+sessionSummary(s)+(s.durMin? " · "+s.durMin+" min":"")+'</div>';
-    if(s.type==="fuerza"){
-      h+='<details><summary style="font-size:14px;color:var(--accent)">Ver series</summary>';
-      for(const ex of s.exercises){
-        h+='<div style="margin:8px 0"><b style="font-size:14.5px">'+esc(ex.name)+'</b>';
-        const best=ex.mode==="w"? Math.max(...ex.sets.map(x=>est1RM(x.w,x.r))) : 0;
-        if(best) h+=' <span class="tag1rm">1RM est. '+best+' lb</span>';
-        h+='<div class="histset">'+ex.sets.map(x=>setLabel(ex.mode,x)).join(" · ")+'</div></div>';
-      }
-      h+='</details>';
+  for(const date of dates){
+    h+='<h3>'+fmtDate(date)+'</h3>';
+    const d=S.days[date];
+    if(d && d.saved){
+      h+='<div class="card"><div class="row between"><b>Cierre del día</b>'
+        +'<button class="small ghost" onclick="CIERRE_DATE=\''+date+'\';TAB=\'cierre\';SUB=null;render()">Abrir</button></div>'
+        +'<div class="sub" style="white-space:pre-wrap;font-size:13.5px">'+esc(cierreText(date).split("\n").slice(1).join("\n").trim())+'</div></div>';
     }
-    if(s.note) h+='<div class="safety">📝 '+esc(s.note)+'</div>';
-    if(s.cardio && s.cardio.note) h+='<div class="safety">📝 '+esc(s.cardio.note)+'</div>';
-    h+='<div class="row" style="margin-top:8px"><button class="small danger" onclick="delSession(\''+s.id+'\')">Borrar</button></div>';
-    h+='</div>';
+    for(const s of S.sessions.filter(x=>x.date===date)){
+      if(s.src==="cierre") continue;
+      h+='<div class="card"><div class="row between"><b>'+esc(s.name)+'</b>'
+        +'<span class="pill '+(s.type==="fuerza"?"blue":"orange")+'">'+(s.type==="fuerza"?"fuerza":"cardio")+'</span></div>'
+        +'<div class="sub">'+sessionSummary(s)+(s.durMin? " · "+s.durMin+" min":"")+'</div>';
+      if(s.type==="fuerza"){
+        h+='<details><summary style="font-size:14px;color:var(--accent)">Ver series</summary>';
+        for(const ex of s.exercises){
+          h+='<div style="margin:8px 0"><b style="font-size:14.5px">'+esc(ex.name)+'</b>';
+          const best=ex.mode==="w"? Math.max(...ex.sets.map(x=>est1RM(x.w,x.r))) : 0;
+          if(best) h+=' <span class="tag1rm">1RM est. '+best+' lb</span>';
+          h+='<div class="histset">'+ex.sets.map(x=>setLabel(ex.mode,x)).join(" · ")+'</div></div>';
+        }
+        h+='</details>';
+      }
+      if(s.note) h+='<div class="safety">📝 '+esc(s.note)+'</div>';
+      if(s.cardio && s.cardio.note) h+='<div class="safety">📝 '+esc(s.cardio.note)+'</div>';
+      h+='<div class="row" style="margin-top:8px"><button class="small danger" onclick="delSession(\''+s.id+'\')">Borrar</button></div></div>';
+    }
   }
   return h;
 }
@@ -861,8 +1241,7 @@ function trackedExercises(){
 function viewProgreso(){
   const exs=trackedExercises();
   let h='<h2>Progreso</h2>';
-  if(!S.sessions.length) return h+'<div class="card">Registra tu primera sesión y aquí aparecen las gráficas.</div>';
-  /* Fuerza */
+  if(!S.sessions.length && !Object.keys(S.days).length) return h+'<div class="card">Cierra tu primer día y aquí aparecen las gráficas.</div>';
   h+='<div class="chartbox"><h3>Fuerza por ejercicio</h3>'
     +'<div class="sub">1RM estimado (Epley) — la métrica válida de progresión, no el volumen total</div>';
   if(exs.length){
@@ -872,18 +1251,16 @@ function viewProgreso(){
     h+='</select><div id="chart1rm"></div>';
   } else h+='<div class="sub">Aún sin series de fuerza registradas.</div>';
   h+='</div>';
-  /* Zona 2 */
-  h+='<div class="chartbox"><h3>Zona 2 — FC promedio</h3>'
-    +'<div class="sub">Ventana objetivo 115–125 bpm (banda sombreada)</div><div id="chartz2"></div></div>';
-  /* Semanas */
+  h+='<div class="chartbox"><h3>Cardio — FC promedio</h3>'
+    +'<div class="sub">Ventana de los bloques de trabajo 115–125 bpm (banda sombreada). Los surges suben el promedio: 118–128 en una sesión completa es correcto.</div><div id="chartz2"></div></div>';
+  h+='<div class="chartbox"><h3>RHR — el veredicto del experimento</h3>'
+    +'<div class="sub">Meta: volver a 57–58 bpm. Subió a 69 en el Mundial; el cardio diario es la vía de regreso.</div><div id="chartrhr"></div></div>';
   h+='<div class="chartbox"><h3>Sesiones por semana</h3>'
-    +'<div class="sub">Meta: 3 fuerza + 2 cardio estructurado (la métrica que reemplaza a los exercise minutes)</div><div id="chartwk"></div>'
+    +'<div class="sub">Meta: 3 fuerza + 7 cardio</div><div id="chartwk"></div>'
     +'<div class="legend"><span><span class="sw" style="background:var(--s1)"></span>Fuerza</span>'
-    +'<span><span class="sw" style="background:var(--s2)"></span>Zona 2 / fútbol / rampa</span></div></div>';
+    +'<span><span class="sw" style="background:var(--s2)"></span>Cardio</span></div></div>';
   return h;
 }
-
-/* ---- helpers de SVG ---- */
 function svgOpen(w,hh){ return '<svg viewBox="0 0 '+w+' '+hh+'" width="100%" style="display:block">'; }
 function chartFrame(w,h,pad){
   let s="";
@@ -894,12 +1271,11 @@ function chartFrame(w,h,pad){
   s+='<line x1="'+pad.l+'" y1="'+(h-pad.b)+'" x2="'+(w-pad.r)+'" y2="'+(h-pad.b)+'" stroke="var(--axis)" stroke-width="1"/>';
   return s;
 }
-function niceMax(v){ if(v<=10) return 10; const p=Math.pow(10,Math.floor(Math.log10(v))); const n=Math.ceil(v/(p/2))*(p/2); return n; }
-function ptTip(el){ /* tooltip por punto */
+function niceMax(v){ if(v<=10) return 10; const p=Math.pow(10,Math.floor(Math.log10(v))); return Math.ceil(v/(p/2))*(p/2); }
+function ptTip(el){
   const tip=document.getElementById("tooltip");
-  el.addEventListener("pointerenter",ev=>{
-    tip.textContent=el.dataset.tip;
-    tip.style.display="block";
+  el.addEventListener("pointerenter",()=>{
+    tip.textContent=el.dataset.tip; tip.style.display="block";
     const r=el.getBoundingClientRect();
     tip.style.left=(r.left+r.width/2+window.scrollX)+"px";
     tip.style.top=(r.top+window.scrollY)+"px";
@@ -910,76 +1286,61 @@ function bindTips(rootId){
   const root=document.getElementById(rootId); if(!root) return;
   root.querySelectorAll("[data-tip]").forEach(ptTip);
 }
-
-function drawCharts(){
-  draw1RM(); drawZ2(); drawWeeks();
-}
-function draw1RM(){
-  const box=document.getElementById("chart1rm"); if(!box) return;
-  const pts=[];
-  for(const s of S.sessions){
-    if(s.type!=="fuerza") continue;
-    const ex=(s.exercises||[]).find(e=>e.exId===progExId);
-    if(!ex||!ex.sets.length) continue;
-    let val=0;
-    if(ex.mode==="w") val=Math.max(...ex.sets.map(x=>est1RM(x.w,x.r)));
-    else val=Math.max(...ex.sets.map(x=>x.r||0)); /* bw: mejores reps */
-    if(val) pts.push({date:s.date, v:val, mode:ex.mode});
-  }
-  if(!pts.length){ box.innerHTML='<div class="sub">Sin datos aún para este ejercicio.</div>'; return; }
-  pts.sort((a,b)=>a.date<b.date?-1:1);
-  const isBW=pts[0].mode==="bw";
-  const W=760,H=240,pad={l:44,r:16,t:14,b:30};
-  const maxV=niceMax(Math.max(...pts.map(p=>p.v))*1.1);
-  const minV=0;
+function drawCharts(){ draw1RM(); drawZ2(); drawRHR(); drawWeeks(); }
+function lineChart(boxId, pts, opts){
+  const box=document.getElementById(boxId); if(!box) return;
+  if(!pts.length){ box.innerHTML='<div class="sub">'+(opts.empty||"Sin datos aún.")+'</div>'; return; }
+  const W=760,H=opts.h||230,pad={l:44,r:16,t:14,b:30};
+  const minV=opts.min!=null? opts.min : 0;
+  const maxV=opts.max!=null? opts.max : niceMax(Math.max(...pts.map(p=>p.v))*1.1);
   const X=i=> pts.length===1? (pad.l+(W-pad.l-pad.r)/2) : pad.l+(W-pad.l-pad.r)*i/(pts.length-1);
-  const Y=v=> (H-pad.b)-(H-pad.t-pad.b)*(v-minV)/(maxV-minV);
-  let s=svgOpen(W,H)+chartFrame(W,H,pad);
+  const Y=v=> (H-pad.b)-(H-pad.t-pad.b)*(Math.min(Math.max(v,minV),maxV)-minV)/(maxV-minV);
+  let s=svgOpen(W,H);
+  if(opts.band) s+='<rect x="'+pad.l+'" y="'+Y(opts.band[1])+'" width="'+(W-pad.l-pad.r)+'" height="'+(Y(opts.band[0])-Y(opts.band[1]))+'" fill="var(--s3)" opacity="0.15"/>';
+  s+=chartFrame(W,H,pad);
   for(let i=0;i<=3;i++){
-    const v=Math.round(maxV*(3-i)/3);
+    const v=Math.round(minV+(maxV-minV)*(3-i)/3);
     s+='<text x="'+(pad.l-8)+'" y="'+(pad.t+(H-pad.t-pad.b)*i/3+4)+'" text-anchor="end" font-size="11" fill="var(--muted)" style="font-variant-numeric:tabular-nums">'+v+'</text>';
   }
   let path="";
   pts.forEach((p,i)=>{ path+=(i?"L":"M")+X(i)+","+Y(p.v); });
-  s+='<path d="'+path+'" fill="none" stroke="var(--s1)" stroke-width="2" stroke-linejoin="round"/>';
+  s+='<path d="'+path+'" fill="none" stroke="'+opts.color+'" stroke-width="2" stroke-linejoin="round"/>';
   pts.forEach((p,i)=>{
-    s+='<circle cx="'+X(i)+'" cy="'+Y(p.v)+'" r="5" fill="var(--s1)" stroke="var(--surface-1)" stroke-width="2" data-tip="'+fmtDate(p.date)+': '+p.v+(isBW?" reps":" lb")+'"/>';
+    s+='<circle cx="'+X(i)+'" cy="'+Y(p.v)+'" r="5" fill="'+opts.color+'" stroke="var(--surface-1)" stroke-width="2" data-tip="'+esc(fmtDate(p.date)+": "+p.v+(opts.unit||""))+'"/>';
   });
-  const lastP=pts[pts.length-1];
-  s+='<text x="'+(X(pts.length-1))+'" y="'+(Y(lastP.v)-10)+'" text-anchor="middle" font-size="12" font-weight="600" fill="var(--ink)">'+lastP.v+(isBW?" reps":" lb")+'</text>';
+  const lp=pts[pts.length-1];
+  s+='<text x="'+X(pts.length-1)+'" y="'+(Y(lp.v)-10)+'" text-anchor="middle" font-size="12" font-weight="600" fill="var(--ink)">'+lp.v+(opts.unit||"")+'</text>';
   s+='<text x="'+pad.l+'" y="'+(H-8)+'" font-size="11" fill="var(--muted)">'+fmtDate(pts[0].date)+'</text>';
-  if(pts.length>1) s+='<text x="'+(W-pad.r)+'" y="'+(H-8)+'" text-anchor="end" font-size="11" fill="var(--muted)">'+fmtDate(lastP.date)+'</text>';
+  if(pts.length>1) s+='<text x="'+(W-pad.r)+'" y="'+(H-8)+'" text-anchor="end" font-size="11" fill="var(--muted)">'+fmtDate(lp.date)+'</text>';
   s+='</svg>';
-  box.innerHTML=s; bindTips("chart1rm");
+  box.innerHTML=s; bindTips(boxId);
+}
+function draw1RM(){
+  if(!document.getElementById("chart1rm")) return;
+  const pts=[]; let isBW=false;
+  for(const s of S.sessions){
+    if(s.type!=="fuerza") continue;
+    const ex=(s.exercises||[]).find(e=>e.exId===progExId);
+    if(!ex||!ex.sets.length) continue;
+    let val = ex.mode==="w"? Math.max(...ex.sets.map(x=>est1RM(x.w,x.r))) : Math.max(...ex.sets.map(x=>x.r||0));
+    isBW = ex.mode!=="w";
+    if(val) pts.push({date:s.date, v:val});
+  }
+  pts.sort((a,b)=>a.date<b.date?-1:1);
+  lineChart("chart1rm", pts, {color:"var(--s1)", unit:isBW?" reps":" lb", empty:"Sin datos aún para este ejercicio."});
 }
 function drawZ2(){
-  const box=document.getElementById("chartz2"); if(!box) return;
-  const pts=S.sessions.filter(s=>s.type==="cardio"&&s.cardio.kind==="zona2"&&s.cardio.hrAvg)
-    .map(s=>({date:s.date, v:s.cardio.hrAvg, min:s.cardio.min||0}))
+  const pts=S.sessions.filter(s=>s.type==="cardio"&&["trabajo","zona2"].includes(s.cardio.kind)&&s.cardio.hrAvg)
+    .map(s=>({date:s.date, v:s.cardio.hrAvg}))
     .sort((a,b)=>a.date<b.date?-1:1);
-  if(!pts.length){ box.innerHTML='<div class="sub">Registra tu primera Zona 2 en el MyRun (la hipótesis #7 sigue esperando).</div>'; return; }
-  const W=760,H=220,pad={l:44,r:16,t:14,b:30};
-  const maxV=140, minV=90;
-  const X=i=> pts.length===1? (pad.l+(W-pad.l-pad.r)/2) : pad.l+(W-pad.l-pad.r)*i/(pts.length-1);
-  const Y=v=> (H-pad.b)-(H-pad.t-pad.b)*(Math.min(Math.max(v,minV),maxV)-minV)/(maxV-minV);
-  let s=svgOpen(W,H);
-  /* banda objetivo 115–125 */
-  s+='<rect x="'+pad.l+'" y="'+Y(125)+'" width="'+(W-pad.l-pad.r)+'" height="'+(Y(115)-Y(125))+'" fill="var(--s3)" opacity="0.15"/>';
-  s+=chartFrame(W,H,pad);
-  [90,115,125,140].forEach(v=>{
-    s+='<text x="'+(pad.l-8)+'" y="'+(Y(v)+4)+'" text-anchor="end" font-size="11" fill="var(--muted)" style="font-variant-numeric:tabular-nums">'+v+'</text>';
-  });
-  let path="";
-  pts.forEach((p,i)=>{ path+=(i?"L":"M")+X(i)+","+Y(p.v); });
-  s+='<path d="'+path+'" fill="none" stroke="var(--s2)" stroke-width="2" stroke-linejoin="round"/>';
-  pts.forEach((p,i)=>{
-    const inZone=p.v>=115&&p.v<=125;
-    s+='<circle cx="'+X(i)+'" cy="'+Y(p.v)+'" r="5" fill="var(--s2)" stroke="var(--surface-1)" stroke-width="2" data-tip="'+fmtDate(p.date)+': '+p.v+' bpm · '+p.min+' min'+(inZone?" ✓":" (fuera)")+'"/>';
-  });
-  s+='<text x="'+pad.l+'" y="'+(H-8)+'" font-size="11" fill="var(--muted)">'+fmtDate(pts[0].date)+'</text>';
-  if(pts.length>1) s+='<text x="'+(W-pad.r)+'" y="'+(H-8)+'" text-anchor="end" font-size="11" fill="var(--muted)">'+fmtDate(pts[pts.length-1].date)+'</text>';
-  s+='</svg>';
-  box.innerHTML=s; bindTips("chartz2");
+  lineChart("chartz2", pts, {color:"var(--s2)", unit:" bpm", min:90, max:150, band:[115,125], h:220,
+    empty:"Cierra tu primer día con cardio y aquí empieza la curva."});
+}
+function drawRHR(){
+  const pts=Object.keys(S.days).sort().filter(k=>S.days[k].saved && S.days[k].salud && S.days[k].salud.rhr)
+    .map(k=>({date:k, v:+S.days[k].salud.rhr}));
+  lineChart("chartrhr", pts, {color:"var(--s3)", unit:" bpm", min:50, max:75, band:[57,58], h:220,
+    empty:"Anota el RHR en el cierre del día y aquí verás si el experimento está funcionando."});
 }
 function isoWeek(dateISO){
   const [y,m,d]=dateISO.split("-").map(Number);
@@ -999,12 +1360,12 @@ function drawWeeks(){
     const wk=isoWeek(s.date);
     weeks[wk]=weeks[wk]||{f:0,c:0};
     if(s.type==="fuerza"&&s.routineId!=="M") weeks[wk].f++;
-    if(s.type==="cardio"&&["zona2","futbol","rampa"].includes(s.cardio.kind)) weeks[wk].c++;
+    if(s.type==="cardio") weeks[wk].c++;
   }
   const keys=Object.keys(weeks).sort().slice(-8);
   if(!keys.length){ box.innerHTML='<div class="sub">Sin sesiones aún.</div>'; return; }
   const W=760,H=200,pad={l:34,r:16,t:14,b:30};
-  const maxV=Math.max(5,...keys.map(k=>Math.max(weeks[k].f,weeks[k].c)));
+  const maxV=Math.max(7,...keys.map(k=>Math.max(weeks[k].f,weeks[k].c)));
   const bw=Math.min(28,(W-pad.l-pad.r)/keys.length/3);
   const Y=v=>(H-pad.b)-(H-pad.t-pad.b)*v/maxV;
   let s=svgOpen(W,H)+chartFrame(W,H,pad);
@@ -1024,63 +1385,51 @@ function drawWeeks(){
 }
 </script>
 <script>
-/* ---------- VISTA: DATOS (export / import / ajustes / ayuda) ---------- */
+/* ---------- VISTA: DATOS ---------- */
 function viewDatos(){
   let h='<h2>Datos</h2>';
-  h+='<div class="card"><b>Exportar para análisis (chat de salud)</b>'
-    +'<div class="sub">Genera un resumen de texto listo para pegar en el chat, o CSV para hoja de cálculo.</div>'
+  h+='<div class="card"><b>Exportar para el chat de salud</b>'
+    +'<div class="sub">El resumen de texto trae los cierres del día listos para pegar.</div>'
     +'<div class="row" style="margin-top:10px">'
     +'<button onclick="exportText()">📋 Copiar resumen</button>'
     +'<button onclick="exportCSV()">⬇️ CSV fuerza</button>'
-    +'<button onclick="exportCardioCSV()">⬇️ CSV cardio</button></div>'
+    +'<button onclick="exportDaysCSV()">⬇️ CSV días</button></div>'
     +'<div class="sub" id="expMsg" style="margin-top:6px"></div></div>';
   h+='<div class="card"><b>Copia de seguridad</b>'
-    +'<div class="sub">Respaldo completo en JSON. Impórtalo si cambias de archivo o de dispositivo.</div>'
+    +'<div class="sub">Respaldo completo en JSON. Impórtalo si cambias de dispositivo.</div>'
     +'<div class="row" style="margin-top:10px">'
     +'<button onclick="backupJSON()">⬇️ Descargar respaldo</button>'
     +'<button onclick="document.getElementById(\'importFile\').click()">⬆️ Importar respaldo</button>'
     +'<input type="file" id="importFile" accept=".json,application/json" style="display:none" onchange="importJSON(this)"></div></div>';
   h+='<div class="card"><b>Ajustes</b>'
-    +'<label class="f">Descanso entre series (segundos)</label>'
+    +'<label class="f">Descanso entre pares (segundos)</label>'
     +'<input type="number" inputmode="numeric" value="'+(S.settings.restSec||90)+'" style="width:120px" onchange="S.settings.restSec=parseInt(this.value)||90;saveState()">'
     +'</div>';
-  h+='<div class="card"><b>Cómo usarla en el iPad</b>'
-    +'<div class="sub" style="margin-top:6px">1. Abre la URL de la app en <b>Safari del iPad</b>.<br>'
-    +'2. Botón compartir (⬆️) → <b>"Añadir a pantalla de inicio"</b> — queda como app con su ícono, a pantalla completa.<br>'
-    +'3. Tus datos se guardan en el iPad automáticamente y sobreviven a las actualizaciones de la app.<br>'
-    +'4. Una vez por semana: <b>⬇️ Descargar respaldo</b> — y pega el 📋 resumen en el chat de salud para análisis.</div></div>';
-  h+='<div class="sub" style="text-align:center;margin:20px 0">Modo Atleta v'+APP_VERSION+' · plan Fase 1 (ago 2026) · cronograma fijo lun–sáb · las rutinas se actualizan en el chat de salud</div>';
+  h+='<div class="card"><b>Cómo funciona ahora</b>'
+    +'<div class="sub" style="margin-top:6px">1. <b>6 am:</b> abre <b>Entrenar → Cardio Trabajo</b> y sigue el guion. No registres nada ahí.<br>'
+    +'2. <b>Mar/Jue/Sáb:</b> la sesión de fuerza. Puedes seguirla en vivo o solo hacerla y anotarla al final.<br>'
+    +'3. <b>En la noche:</b> pestaña <b>Cierre</b> — un solo registro de todo el día.<br>'
+    +'4. <b>Domingo:</b> ⬇️ respaldo + 📋 copiar resumen y pégalo en el chat de salud.</div></div>';
+  h+='<div class="sub" style="text-align:center;margin:20px 0">Modo Atleta v'+APP_VERSION+' · plan Fase 2 (sep 2026)</div>';
   return h;
 }
 function fmtSets(ex){ return ex.sets.map(x=>setLabel(ex.mode,x)).join(", "); }
 function exportText(){
-  let out="REGISTRO MODO ATLETA — export "+todayISO()+"\n\n";
-  const sorted=[...S.sessions].sort((a,b)=>a.date<b.date?-1:1);
-  let cur="";
-  for(const s of sorted){
-    if(s.date!==cur){ cur=s.date; out+="\n== "+s.date+" ==\n"; }
-    if(s.type==="fuerza"){
-      out+="["+s.name+(s.durMin?(" · "+s.durMin+" min"):"")+"]\n";
-      for(const ex of s.exercises){
-        out+="  - "+ex.name+": "+fmtSets(ex);
-        if(ex.mode==="w"){ const b=Math.max(...ex.sets.map(x=>est1RM(x.w,x.r))); if(b) out+=" (1RM est. "+b+")"; }
+  let out="MODO ATLETA — export "+todayISO()+"\n";
+  const dates=Object.keys(S.days).filter(k=>S.days[k].saved).sort();
+  for(const d of dates) out+="\n"+cierreText(d);
+  const extra=S.sessions.filter(s=>s.src!=="cierre");
+  if(extra.length){
+    out+="\n\n== Sesiones registradas en vivo ==\n";
+    for(const s of extra.sort((a,b)=>a.date<b.date?-1:1)){
+      out+="["+s.date+" · "+s.name+"] ";
+      if(s.type==="fuerza"){
         out+="\n";
-      }
-      if(s.note) out+="  Nota: "+s.note+"\n";
-    }else{
-      const c=s.cardio;
-      out+="["+s.name+"] "+sessionSummary(s)+"\n";
-      if(c.note) out+="  Nota: "+c.note+"\n";
+        for(const ex of s.exercises) out+="  - "+ex.name+": "+fmtSets(ex)+"\n";
+      } else out+=sessionSummary(s)+"\n";
     }
   }
-  out+="\nChecklist (últimos 14 días):\n";
-  const days=Object.keys(S.checklist).sort().slice(-14);
-  for(const d of days){
-    const c=S.checklist[d];
-    const okKeys = CHECKLIST.filter(k=>c[k.id]).map(k=>k.t);
-    out+="  "+d+": "+(okKeys.length? okKeys.join(" · ") : "—")+"\n";
-  }
-  copyOrDownload(out, "modo-atleta-resumen.txt", "Resumen copiado al portapapeles ✓");
+  copyOrDownload(out, "modo-atleta-resumen.txt", "Resumen copiado ✓");
 }
 function csvEsc(v){ v=String(v==null?"":v); return /[",\n]/.test(v)? '"'+v.replace(/"/g,'""')+'"' : v; }
 function exportCSV(){
@@ -1096,14 +1445,16 @@ function exportCSV(){
   }
   downloadFile(rows.map(r=>r.map(csvEsc).join(",")).join("\n"), "modo-atleta-fuerza.csv","text/csv");
 }
-function exportCardioCSV(){
-  let rows=[["fecha","tipo","min","fc_prom","fc_max","velocidad_mph","inclinacion_pct","distancia_mi","kcal","nota"]];
-  for(const s of S.sessions){
-    if(s.type!=="cardio") continue;
-    const c=s.cardio;
-    rows.push([s.date,s.name,c.min??"",c.hrAvg??"",c.hrMax??"",c.speed??"",c.incline??"",c.dist??"",c.kcal??"",c.note??""]);
+function exportDaysCSV(){
+  let rows=[["fecha","cardio_min","fc_prom","fc_max","ciclos","incl_max","burst5","rutina","proteina_g","pasos","creatina","mcgill","sueno_h","sleep_score","hrv","rhr","espalda","piel","nota"]];
+  for(const k of Object.keys(S.days).sort()){
+    const d=S.days[k]; if(!d.saved) continue;
+    rows.push([k, d.cardio.done? (d.cardio.min||""):"", d.cardio.hrAvg||"", d.cardio.hrMax||"", d.cardio.cycles||"",
+      d.cardio.incline||"", d.cardio.surge5?"sí":"", d.fuerza.routineId||"", d.habitos.prot||"", d.habitos.pasos||"",
+      d.habitos.crea?"sí":"", d.habitos.mcgill?"sí":"", d.salud.sleepH,
+      d.salud.sleepScore, d.salud.hrv, d.salud.rhr, d.salud.espalda, d.salud.piel, d.nota||""]);
   }
-  downloadFile(rows.map(r=>r.map(csvEsc).join(",")).join("\n"), "modo-atleta-cardio.csv","text/csv");
+  downloadFile(rows.map(r=>r.map(csvEsc).join(",")).join("\n"), "modo-atleta-dias.csv","text/csv");
 }
 function backupJSON(){
   downloadFile(JSON.stringify({app:"modoAtleta",version:APP_VERSION,exported:new Date().toISOString(),data:S},null,1),
@@ -1118,9 +1469,8 @@ function importJSON(input){
       const data=obj.data||obj;
       if(!Array.isArray(data.sessions)) throw new Error("formato");
       if(!confirm("Importar respaldo con "+data.sessions.length+" sesiones. ¿Reemplazar los datos actuales?")) return;
-      S=data; S.settings=S.settings||{restSec:90}; S.checklist=S.checklist||{};
-      saveState(); render();
-      alert("Respaldo importado ✓");
+      S=data; S.settings=S.settings||{restSec:90}; S.checklist=S.checklist||{}; S.days=S.days||{};
+      saveState(); render(); alert("Respaldo importado ✓");
     }catch(e){ alert("No pude leer ese archivo. ¿Es el respaldo JSON de Modo Atleta?"); }
   };
   rd.readAsText(f);
@@ -1135,7 +1485,7 @@ function downloadFile(content,name,type){
   }catch(e){ copyOrDownload(content,name,"Copiado al portapapeles ✓"); }
 }
 function copyOrDownload(text,name,okMsg){
-  const done=()=>{ const m=document.getElementById("expMsg"); if(m){ m.textContent=okMsg; setTimeout(()=>m.textContent="",4000);} else alert(okMsg); };
+  const done=()=>{ const m=document.getElementById("expMsg"); if(m){ m.textContent=okMsg; setTimeout(()=>{const x=document.getElementById("expMsg"); if(x)x.textContent="";},4000);} else alert(okMsg); };
   if(navigator.clipboard && navigator.clipboard.writeText){
     navigator.clipboard.writeText(text).then(done).catch(()=>fallbackCopy(text,done));
   } else fallbackCopy(text,done);
@@ -1149,7 +1499,7 @@ function fallbackCopy(text,done){
 }
 
 /* ---------- Init ---------- */
-if(S.active) TAB="entrenar";
+if(S.active){ TAB="entrenar"; SUB=null; }
 render();
 </script>
 </body>
