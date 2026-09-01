@@ -241,7 +241,7 @@ a{color:var(--accent);}
    progresión por 1RM estimado, no volumen total.
    ============================================================ */
 
-const APP_VERSION = "2.0";
+const APP_VERSION = "2.1";
 const LS_KEY = "modoAtleta_v1";   /* NO renombrar: aquí vive el historial */
 
 const DB_STEPS = [5,10,15,20,25,35,40,50,60];
@@ -276,6 +276,18 @@ const INTERVAL_PLAN = [
 const INTERVAL_TOTAL = INTERVAL_PLAN.reduce((a,p)=>a+p.sec,0);
 
 /* Escalera de progresión del cardio (4 semanas) */
+const RUN_LADDER = [
+  {f:"Fase 0 — ahora", d:"Pogos 3×10 en S1 y S3 · sóleo sentado en S2 · step-down con freno en S3. Cero carrera todavía: se construye el tendón y el amortiguador."},
+  {f:"Fase 1 — trote-caminata", d:"30 s trote / 90 s caminata × 6, 2×/sem en el MyRun. Puerta de entrada: 8 semanas con la pierna izquierda callada."},
+  {f:"Fase 2 — continuo suave", d:"10–15 min seguidos + 4 rectas de 60 m."},
+  {f:"Fase 3 — tu velocidad", d:"Aceleraciones cortas con recuperación completa. Alta fuerza, bajísimo volumen: 10 × 40 m es MUCHA menos exposición para la columna que 40 min trotando."}
+];
+const RUN_GATES = [
+  "🫀 Prueba de esfuerzo hecha. Es la puerta #1 — no la del back, la del corazón.",
+  "🦵 Ocho semanas sin síntomas en la pierna izquierda: sin hormigueo, sin irradiación, sin debilidad.",
+  "📉 Regla de retroceso: un síntoma durante la sesión o en las 24 h siguientes = bajas un escalón. No se aguanta."
+];
+
 const CARDIO_LADDER = [
   "Sem 1–2: bloques de trabajo al 10–12%. Meta: terminar los 45 min sin que la FC se salga de 125 en los bloques.",
   "Sem 3–4: 12–14%. Los surges suben a 4.2 mph.",
@@ -301,6 +313,8 @@ const ROUTINES = [
      tip:"Peso POR MANCUERNA. Salto 50→60 es +20%: primero llega a 3×7 con 50."},
     {id:"dbrow", name:"DB Row (1 brazo, apoyado)", mode:"w", sets:3, reps:[6,8], startW:60, perSide:true, pair:"B2", block:"fuerza",
      tip:"Techo del inventario (60). Cuando salgan 3×8 por lado, progresa con pausa de 1 s arriba."},
+    {id:"pogo", name:"🏃 Pogos — rigidez de tobillo", mode:"bw", sets:3, reps:[10,10], block:"run",
+     tip:"FASE 0 DEL RETORNO A CORRER. Saltitos mínimos, solo tobillo, rodilla casi recta, contacto corto y silencioso. Amplitud pequeña — no es saltar, es rebotar. Si suena fuerte al caer, bájale."},
     {id:"mbrot", name:"🏌️ Lanzamiento rotacional — pelota 20 lb", mode:"w", sets:3, reps:[5,5], startW:20, perSide:true, block:"disoc",
      tip:"DISOCIACIÓN: el giro arranca en la cadera, la columna solo transmite. Intención de máxima velocidad, contra pared, sin slams. Es el ejercicio que más transfiere a velocidad de swing."},
     {id:"pallof", name:"Pallof Press — HOLD", mode:"hold", sets:2, secs:30, perSide:true, block:"disoc",
@@ -315,7 +329,7 @@ const ROUTINES = [
   note:"Cadera pesada sin carga axial. El bloque de tenis es abajo→arriba (patrón de saque) y salud de manguito rotador — no lo saltes: el hombro es lo primero que se rompe volviendo al tenis.",
   exercises:[
     {id:"hipthrust", name:"DB Hip Thrust", mode:"w", sets:4, reps:[5,8], startW:60, pair:"A1", block:"fuerza",
-     tip:"Dos mancuernas de 60 sobre la cadera (con toalla) = 120 lb sin comprimir la columna. Rey del glúteo para L2–S1."},
+     tip:"Dos mancuernas de 60 sobre la cadera (con toalla) = 120 lb sin comprimir la columna. AHORA CON INTENCIÓN EXPLOSIVA: sube rápido, baja controlado. La extensión de cadera veloz es el motor del sprint."},
     {id:"dip", name:"Chest Dip (paralelas)", mode:"bw", sets:4, reps:[5,8], pair:"A2", block:"fuerza",
      tip:"A ~226 lb de corporal es tu mejor carga de empuje. Cero carga axial."},
     {id:"bss", name:"Bulgarian Split Squat", mode:"w", sets:3, reps:[6,8], startW:40, perSide:true, pair:"B1", block:"fuerza",
@@ -326,6 +340,8 @@ const ROUTINES = [
      tip:"DISOCIACIÓN DE SAQUE: banda anclada abajo, tiras en diagonal hasta arriba del hombro opuesto. Gira la cadera primero, hombros después. Termina alto SIN arquear la lumbar."},
     {id:"extrot", name:"🎾 Rotación externa de hombro — mini banda", mode:"band", sets:2, reps:[12,15], perSide:true, block:"disoc",
      tip:"Codo pegado al costado, 90°. Manguito rotador = el seguro del saque. Lento, sin compensar con el tronco."},
+    {id:"soleus", name:"🏃 Talones SENTADO — sóleo", mode:"w", sets:3, reps:[12,15], startW:60, block:"run",
+     tip:"Rodilla flexionada = aísla el sóleo, que absorbe 6–8× tu peso por zancada corriendo. Es el amortiguador #1 antes de que la carga llegue a la columna. El de pie (S1/S3) trabaja el gemelo; este NO lo reemplaza."},
     {id:"tspine", name:"Extensión torácica sobre foam roller", mode:"hold", sets:2, secs:45, block:"disoc",
      tip:"Si la torácica no da la rotación, la lumbar la pone — y tu lumbar no está para prestarla."}
   ]
@@ -341,6 +357,10 @@ const ROUTINES = [
     {id:"stepup", name:"Step-up al banco", mode:"w", sets:3, reps:[8,8], startW:40, perSide:true, pair:"B1", block:"fuerza",
      tip:"Sube sin impulso de la pierna de abajo. Baja controlado — ahí está el trabajo."},
     {id:"ezcurl", name:"EZ-Bar Curl", mode:"w", sets:3, reps:[6,8], startW:55, pair:"B2", block:"fuerza"},
+    {id:"pogo", name:"🏃 Pogos — rigidez de tobillo", mode:"bw", sets:3, reps:[10,10], block:"run",
+     tip:"Segunda dosis de la semana. Contacto corto y silencioso."},
+    {id:"stepdown", name:"🎾 Step-down lateral con freno", mode:"w", sets:3, reps:[6,8], startW:20, perSide:true, block:"run",
+     tip:"DESACELERACIÓN: bajas del banco a un lado, tocas el piso y FRENAS 1 s antes de volver. Es la demanda real del cambio de dirección en tenis y en el touch. Sin rebote."},
     {id:"woodchop", name:"🏌️ Wood Chop con banda (arriba → abajo)", mode:"band", sets:3, reps:[8,10], perSide:true, block:"disoc",
      tip:"DISOCIACIÓN DE DOWNSWING: es el espejo del lift del jueves. Cadera manda, columna estable, sin flexión cargada."},
     {id:"carry", name:"Suitcase Carry", mode:"carry", sets:3, reps:[40,40], startW:60, perSide:true, block:"disoc",
@@ -369,13 +389,13 @@ const ROUTINES = [
 
 /* Calendario semanal */
 const WEEK_PLAN = [
-  {d:"Lunes",     c:"Cardio Trabajo 45 min", f:"—"},
-  {d:"Martes",    c:"Cardio Trabajo 45 min", f:"S1 — Empuje + Golf"},
-  {d:"Miércoles", c:"Cardio Trabajo 45 min", f:"—"},
-  {d:"Jueves",    c:"Cardio Trabajo 45 min", f:"S2 — Tirón + Tenis"},
-  {d:"Viernes",   c:"Cardio Trabajo 45 min", f:"—"},
-  {d:"Sábado",    c:"Cardio Trabajo 45 min", f:"S3 — Full body"},
-  {d:"Domingo",   c:"Caminata libre",        f:"—"}
+  {d:"Lunes",     c:"Cardio 45 min", f:"—", s:""},
+  {d:"Martes",    c:"Cardio 45 min", f:"S1 — Empuje + Golf", s:""},
+  {d:"Miércoles", c:"Cardio 30 min", f:"—", s:"🎾 Tenis"},
+  {d:"Jueves",    c:"Cardio 45 min", f:"S2 — Tirón + Tenis", s:""},
+  {d:"Viernes",   c:"Cardio 30 min", f:"—", s:"🎾 Práctica"},
+  {d:"Sábado",    c:"Cardio 45 min", f:"S3 — Full body", s:""},
+  {d:"Domingo",   c:"Caminata / libre", f:"—", s:"🏉 Touch (alternos)"}
 ];
 const DOW_ROUTINE = {2:"S1", 4:"S2", 6:"S3"};  /* 0=dom */
 
@@ -389,8 +409,12 @@ const CARDIO_TYPES = [
    fields:["min","hrAvg","hrMax","kcal"]},
   {id:"golf", name:"Golf", target:"Caminando si se puede. El golf NO sustituye cardio ni fuerza.",
    fields:["min","hrAvg","kcal"]},
-  {id:"tenis", name:"Tenis", target:"Nunca en frío: 10 min de movilidad + swings progresivos antes del primer saque.",
+  {id:"tenis", name:"Tenis", target:"Nunca en frío: 10 min de movilidad + saques progresivos (5 al 50%, 5 al 75%) antes del primero real.",
    fields:["min","hrAvg","hrMax","kcal"]},
+  {id:"touch", name:"Touch Rugby — CERO contacto", target:"Domingos alternos. Sin tackle, sin ruck, sin scrum. Si el partido se pone físico, te sales: esa es la regla completa.",
+   fields:["min","hrAvg","hrMax","kcal"]},
+  {id:"trote", name:"Trote-caminata (retorno a correr)", target:"Fase 1: 30 s trote / 90 s caminata × 6, 2×/sem. Cero síntomas en pierna izquierda durante y 24 h después.",
+   fields:["min","hrAvg","hrMax","dist","kcal"]},
   {id:"rampa", name:"Test de rampa VO₂max", target:"3.5 mph fijo · +2% incl cada 2 min · hasta ~150 bpm. Anota inclinación final + tiempo + FC final.",
    fields:["min","hrMax","incline","kcal"]},
   {id:"caminata", name:"Caminata", target:"Ritmo conversacional. Suma pasos.",
@@ -719,7 +743,7 @@ function viewCierre(){
     +segBtn("🟡 Rigidez", d.salud.espalda==="amarillo","setDayVal(\'salud\',\'espalda\',\'amarillo\')","y")
     +segBtn("🔴 Irradiado", d.salud.espalda==="rojo","setDayVal(\'salud\',\'espalda\',\'rojo\')","r")
     +'</div>';
-  if(d.salud.espalda==="rojo") h+='<div class="banner">🔴 Dolor irradiado a pierna izquierda = tu síntoma centinela. STOP golf, tenis y surges. Solo caminata plana y McGill hasta que ceda.</div>';
+  if(d.salud.espalda==="rojo") h+='<div class="banner">🔴 Dolor irradiado a pierna izquierda = tu síntoma centinela. STOP golf, tenis, touch, trote y surges. Solo caminata plana y McGill hasta que ceda. Este es el síntoma centinela, no el dolor lumbar local.</div>';
   h+='<label class="f">Piel / eczema</label><div class="seg tri">'
     +segBtn("Sin brote", d.salud.piel==="ok", "setDayVal(\'salud\',\'piel\',\'ok\')","g")
     +segBtn("Brote", d.salud.piel==="brote", "setDayVal(\'salud\',\'piel\',\'brote\')","y")
@@ -739,9 +763,9 @@ function viewCierre(){
   for(const w of WEEK_PLAN){
     const isToday = w.d.toLowerCase().startsWith(["domingo","lunes","martes","miércoles","jueves","viernes","sábado"][dow].slice(0,4));
     h+='<div class="row between" style="padding:6px 0;border-bottom:1px solid var(--grid)'+(isToday?';font-weight:700;color:var(--accent)':'')+'">'
-      +'<span>'+w.d+'</span><span style="font-size:14px;text-align:right">'+w.c+(w.f!=="—"? ' <span class="pill blue" style="margin-left:6px">'+w.f.split(" —")[0]+'</span>':'')+'</span></div>';
+      +'<span>'+w.d+'</span><span style="font-size:14px;text-align:right">'+w.c+(w.f!=="—"? ' <span class="pill blue" style="margin-left:6px">'+w.f.split(" —")[0]+'</span>':'')+(w.s? ' <span class="pill green" style="margin-left:4px">'+w.s+'</span>':'')+'</span></div>';
   }
-  h+='<div class="safety" style="margin-top:8px">Si vuelve el fútbol del jueves: S2 se mueve a miércoles. Nunca fuerza pesada el mismo día que doble ronda de golf.</div></div>';
+  h+='<div class="safety" style="margin-top:8px">Días con deporte: el cardio de la mañana baja a 30 min (2 ciclos). Nunca fuerza pesada el mismo día que doble ronda de golf. 🏉 Touch = CERO contacto, domingos alternos.</div></div>';
 
   h+='<div class="card"><b>Reglas de la casa</b>'
     +'<div class="safety">❌ Sin carga axial (L2–S1) · ❌ Sin impacto salvo el burst autorizado · ✅ Exhalar en el esfuerzo, nunca Valsalva (CAC 385.9) · ✅ 1–2 reps en reserva, nunca al fallo · ✅ La FC manda sobre el número en la app · 🛑 Dolor torácico, disnea desproporcionada o mareo → parar y consultar.</div></div>';
@@ -886,6 +910,10 @@ function viewEntrenar(){
       +'<div class="row between"><b>'+esc(r.name)+'</b><span class="pill '+(isM?"orange":"blue")+'">'+esc(r.day)+' · '+esc(r.dur)+'</span></div>'
       +'<div class="sub">'+r.exercises.map(e=>e.name.replace(" ⭐","")).join(" · ")+'</div></div>';
   }
+  h+='<div class="card" style="border-color:var(--s3)"><b>🏃 Retorno a correr — dónde vas</b>'
+    +'<div class="sub" style="margin:6px 0 10px">Objetivo: tenis 2×/sem + touch rugby domingos alternos, y progresivamente correr. La pierna izquierda manda, no el calendario.</div>';
+  for(const p of RUN_LADDER) h+='<div style="padding:7px 0;border-bottom:1px solid var(--grid)"><b style="font-size:14.5px">'+esc(p.f)+'</b><div class="safety" style="margin-top:2px">'+esc(p.d)+'</div></div>';
+  h+='<div class="safety" style="margin-top:10px">'+RUN_GATES.map(x=>esc(x)).join("<br>")+'</div></div>';
   h+='<h3>Otros registros de cardio</h3>';
   for(const c of CARDIO_TYPES){
     if(c.id==="trabajo") continue;
